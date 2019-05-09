@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>SimSearch UI</title>
+	 <script src="js/jquery-3.3.1.js"></script>
+    <script src="settings.js"></script>
+    <script src="js/semantic_search.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<div class="logo-container">
+	<img alt="SimSearch Logo" src="images/logo.svg" class="logo" />
+</div>
+
+<div class="whole-area">
+
+    <div id="SemanticSearch" class="tab">
+        <!-- use SimSearch semantic search -->
+            <div class="search-container">
+                <input type="text" class="query-box" 
+                       title="your keywords" id="searchText" onkeypress="search_enter(event)" />
+                <input id="btnSearch" type="button" value="search" class="query-button" onclick="search_click()" />
+            </div>
+
+        <div class="search-area">
+            <div class="answer-container" id="search_results">
+            </div>
+            <div class="semantics" id="search_semantics">
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+<script>
+    var searchText = $("#searchText");
+    searchText.focus();
+
+    // callback to change html-dom if it needs changing
+    function update_ui(search) {
+        if (search.error.length > 0) {
+            alert(search.error);
+        } else {
+            $("#search_results").html(search.get_semantic_search_html());
+        }
+        if (search.busy) {
+            searchText.attr("disabled", "true");
+            $("#btnSearch").attr("disabled", "true");
+        } else {
+            searchText.removeAttr("disabled");
+            $("#btnSearch").removeAttr("disabled");
+        }
+    }
+
+    const semantic_search = new SemanticSearch(settings, update_ui);
+
+    // pagination stubs used by generated render code
+    function doInnerPrev(url) {
+        semantic_search.doInnerPrev(url);
+    }
+
+    function doInnerNext(url) {
+        semantic_search.doInnerNext(url);
+    }
+
+    function prevPage() {
+        semantic_search.prevPage();
+    }
+
+    function nextPage() {
+        semantic_search.nextPage();
+    }
+
+    // semantic search enter key check
+    function search_enter(event) {
+        if (event.keyCode === 13) {
+            search_click();
+        }
+    }
+
+    // do a semantic search
+    function search_click() {
+        const search_text = searchText.val();
+        if (search_text.length > 1) {
+            semantic_search.do_semantic_search(search_text);
+        } else {
+            alert('please enter a search query');
+        }
+    }
+
+
+</script>
+
+</body>
+</html>
