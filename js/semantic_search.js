@@ -11,22 +11,22 @@ class SemanticSearch {
     constructor(settings, update_ui) {
         this.settings = settings;
         this.update_ui = update_ui;
+
+        // the current semantic search set
+        this.current_text = '';  // current search text
+        this.semantic_search_results = [];
+        this.semantic_search_result_map = {};
+
+        // pagination for semantic search
+        this.page = 0;
+        this.page_size = kPageSize;
+
+        // are we busy searching?
+        this.busy = false;
+
+        // error message
+        this.error = '';
     }
-
-    // the current semantic search set
-    current_text = '';  // current search text
-    semantic_search_results = [];
-    semantic_search_result_map = {};
-
-    // pagination for semantic search
-    page = 0;
-    page_size = kPageSize;
-
-    // are we busy searching?
-    busy = false;
-
-    // error message
-    error = '';
 
     refresh() {
         if (this.update_ui) {
