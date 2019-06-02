@@ -87,7 +87,7 @@ class SemanticSearch {
         };
 
         const self = this;
-        const url = this.settings.base_url + '/api/semantic/search/anonymous';
+        const url = this.settings.base_url + '/semantic/search/anonymous';
 
         this.page = 0;  // reset to page 0
         this.current_text = text;  // reset test to search for
