@@ -102,7 +102,7 @@ class SemanticSearch {
             headers: {
                 'Content-Type': 'application/json',
                 'Security-Id': this.settings.sid,
-                'Customer-Id': SemanticSearch.getClientId(),
+                'Client-Id': SemanticSearch.getClientId(),
                 'API-Version': this.settings.api_version,
             },
             'type': 'PUT',
