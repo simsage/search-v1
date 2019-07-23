@@ -2,10 +2,6 @@
 // Semantic Search helper class
 //
 
-
-const kPageSize = 10;  // how many results per page
-
-
 class SemanticSearch {
 
     constructor(settings, update_ui) {
@@ -19,7 +15,8 @@ class SemanticSearch {
 
         // pagination for semantic search
         this.page = 0;
-        this.page_size = kPageSize;
+        this.num_results = -1;
+        this.num_pages = 0;
 
         // are we busy searching?
         this.busy = false;
@@ -67,7 +64,7 @@ class SemanticSearch {
 
     // pagination - next page set
     nextPage() {
-        if (this.page_size === this.semantic_search_results.length) {
+        if ((this.page + 1) < this.num_pages) {
             this.page += 1;
             this.do_semantic_search(this.current_text);
         }
@@ -78,21 +75,21 @@ class SemanticSearch {
 
         let searchObj = {
             'organisationId': this.settings.organisationId,
-            'kbId': this.settings.kbId,
-            'securityId': this.settings.sid,
+            'kbList': settings.kbList,
             'keywords': text,
             'page': this.page,
-            'numResults': this.page_size,
-            'scoreThreshold': 0.0
+            'fragmentCount': search_settings.fragment_count,
+            'maxWordDistance': search_settings.max_word_distance,
+            'numResults': search_settings.page_size,
+            'scoreThreshold': search_settings.score_threshold,
+            'askBot': search_settings.ask_bot,
+            'botThreshold': search_settings.bot_threshold,
         };
 
         const self = this;
         const url = this.settings.base_url + '/semantic/search/anonymous';
 
-        this.page = 0;  // reset to page 0
         this.current_text = text;  // reset test to search for
-        this.semantic_search_results = [];
-        this.semantic_search_result_map = {};
         this.error = '';
         this.busy = true;
 
@@ -111,6 +108,9 @@ class SemanticSearch {
             'dataType': 'json',
             'success': function (data) {
 
+                self.semantic_search_results = [];
+                self.semantic_search_result_map = {};
+
                 if (data && data.resultList) {
 
                     data.resultList.map(function (sr) {
@@ -122,12 +122,20 @@ class SemanticSearch {
                         self.semantic_search_result_map[sr.url] = sr;
                     });
                     self.busy = false;
-                    self.refresh();
+                    self.num_results = data.totalDocumentCount;
+                    const divided = data.totalDocumentCount / search_settings.page_size;
+                    self.num_pages = parseInt(divided);
+                    if (parseInt(divided) < divided) {
+                        self.num_pages += 1;
+                    }
                 }
+                self.refresh();
             }
 
         })
         .fail(function (err) {
+            self.semantic_search_results = [];
+            self.semantic_search_result_map = {};
             console.error(JSON.stringify(err));
             self.error = err;
             self.busy = false;
@@ -137,42 +145,61 @@ class SemanticSearch {
 
     // get the html for the search results neatly drawn out
     get_semantic_search_html() {
-        let reverse = this.semantic_search_results.slice(); // copy
-        reverse.reverse();
-
-        const self = this;
+        let list = this.semantic_search_results.slice(); // copy
         let gen_html = '';
-        reverse.map(function (h) {
-            gen_html += '<div class="chat-capsule">';
+        list.map(function (h) {
+            if (h.botResult) {
+                gen_html += '<div class="bot-capsule">';
+                gen_html += '<div class="bot-simsage-logo">';
+                gen_html += '<img class="bot-simsage-logo-size" src="images/tinman.svg" alt="SimSage" />';
+                gen_html += '</div>';
+                gen_html += '<div class="bot-msg">';
+                gen_html += h.textList[0];
+                gen_html += '</div>';
+                if (h.url.length > 0) {
+                    gen_html += '<div class="bot-link">';
+                    gen_html += '<a href="' + h.url + '" target="_blank">' + h.url + '</a>';
+                    gen_html += '</div>';
+                }
+                gen_html += '</div>';
 
-            // inner navigation
-            gen_html += "<div class='searchInsideNav'>";
-            gen_html += "    <div onclick='doInnerPrev(\"" + h.url + "\")'";
-            if (h.index > 0)
-                gen_html += "         class='insideNavButtonStyle'>&lt;</div>";
-            else
-                gen_html += "         class='insideNavButtonStyleDisabled'>&lt;</div>";
-            gen_html += "    <div onclick='doInnerNext(\"" + h.url + "\")'";
-            if (h.index + 1 < h.num_results)
-                gen_html += "         class='insideNavButtonStyle'>&gt;</div>";
-            else
-                gen_html += "         class='insideNavButtonStyleDisabled'>&gt;</div>";
-            gen_html += "</div>";
+            } else {
+                gen_html += '<div class="chat-capsule">';
 
-            gen_html += '<div class="chat-url">' + h.url + '</div>';
-            gen_html += '<div class="chat-msg">';
-            gen_html += SemanticSearch.highlight(h.textList[h.index]);
-            gen_html += '</div>';
-            gen_html += '</div>';
-            gen_html += '<br clear="both" />';
+                // inner navigation
+                gen_html += "<div class='searchInsideNav'>";
+                gen_html += "    <div onclick='doInnerPrev(\"" + h.url + "\")'";
+                if (h.index > 0)
+                    gen_html += "         class='insideNavButtonStyle'>&lt;</div>";
+                else
+                    gen_html += "         class='insideNavButtonStyleDisabled'>&lt;</div>";
+                gen_html += "    <div onclick='doInnerNext(\"" + h.url + "\")'";
+                if (h.index + 1 < h.num_results)
+                    gen_html += "         class='insideNavButtonStyle'>&gt;</div>";
+                else
+                    gen_html += "         class='insideNavButtonStyleDisabled'>&gt;</div>";
+                gen_html += "</div>";
+
+                gen_html += '<div class="chat-title">' + h.title;
+                if (h.author && h.author.length > 0) {
+                    gen_html += " (" + h.author + ")"
+                }
+                gen_html += '</div>';
+
+                gen_html += '<div class="chat-msg">';
+                gen_html += SemanticSearch.highlight(h.textList[h.index]);
+                gen_html += '</div>';
+                gen_html += '<div class="chat-url" onclick="openUrl(\'' + h.url + '\')">' + h.url + '</div>';
+                gen_html += '</div>';
+            }
         });
 
         // add pagination at the bottom
         gen_html += '<div class="paginationNav">';
-        const classStr1 = this.page > 0 ? "paginationButton" : "paginationButtonDisabled";
-        gen_html += '    <div class="' + classStr1 + '" onclick="prevPage()">prev</div>';
-        const classStr2 = reverse.length === this.page_size ? "paginationButton" : "paginationButtonDisabled";
-        gen_html += '    <div class="' + classStr2 + '" onclick="nextPage()">next</div>';
+        const classStr1 = ((this.page > 0) && !this.busy) ? "paginationButton" : "paginationButtonDisabled";
+        gen_html += '    <div id="btnPrev" class="' + classStr1 + '" onclick="prevPage()">prev</div>';
+        const classStr2 = (((this.page + 1) < this.num_pages) && !this.busy) ? "paginationButton" : "paginationButtonDisabled";
+        gen_html += '    <div id="btnNext" class="' + classStr2 + '" onclick="nextPage()">next</div>';
         gen_html += '</div>';
 
         return gen_html;

@@ -1,25 +1,26 @@
 
 .logo-container {
 	margin-left: 20px;
-	margin-top: 10px;
+	margin-top: 23px;
 }
 
 .logo {
-	width: 200px;
+	width: 140px;
 }
 
 .query-area {
+    width: 90%;
 }
 
 .search-container {
 	margin-left: 50px;
 	margin-top: 20px;
-	width: 95%;
+	width: 100%;
     overflow-y: auto;
 }
 
 .query-box {
-	width: 60%;
+	width: 80%;
     padding-left: 5px;
 	height: 30px;
 	float: left;
@@ -34,7 +35,7 @@
 .chat-capsule {
     float: left;
     margin-bottom: 20px;
-    width: 80%;
+    width: 100%;
 }
 
 .chat-img {
@@ -54,31 +55,74 @@
     font-weight: lighter;
 }
 
-.chat-url {
+.chat-title {
     margin-top: 8px;
     font-size: 0.8em;
     font-weight: bold;
 }
 
+.chat-url {
+    float: none;
+    margin-top: 35px;
+    color: #1010a0;
+    margin-left: 52px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
 .chat-msg {
     float: left;
-    width: 80%;
+    font-size: 0.9em;
+    width: 90%;
     margin-top: 8px;
+}
+
+.bot-capsule {
+    float: left;
+    margin-left: 70px;
+    margin-bottom: 20px;
+    width: 70%;
+    border: 1px solid #78909c;
+    border-radius: 4px;
+}
+
+.bot-msg {
+    float: left;
+    font-size: 0.95em;
+    width: 90%;
+    padding: 20px;
+}
+
+.bot-simsage-logo {
+    float: left;
+    margin-left: 10px;
+    margin-top: 10px;
+    width: 40px;
+}
+
+.bot-simsage-logo-size {
+    width: 40px;
+}
+
+.bot-link {
+    float: left;
+    margin-left: 70px;
+    margin-bottom: 10px;
 }
 
 .hl1 {
     font-weight: 700;
-    background-color: #ffff20;
+    background-color: #ffffa0;
 }
 
 .hl2 {
     font-weight: 700;
-    background-color: #ffffa0;
+    background-color: #ddd;
 }
 
 .hl3 {
     font-weight: 700;
-    background-color: #ffffe0;
+    background-color: #eee;
 }
 
 .image-container {
@@ -178,18 +222,12 @@
 }
 
 .answer-container {
-    width: 75%;
+    width: 100%;
     min-width: 400px;
-    margin-top: 40px;
+    margin-top: 10px;
     float: left;
     overflow-y: auto;
     margin-left: 50px;
-}
-
-.semantics {
-    width: 20%;
-    margin-top: 50px;
-    float: left;
 }
 
 .semantic-entry {
@@ -213,5 +251,22 @@
 .semantic-value {
     font-size: 0.8em;
     margin-left: 15px;
+}
+
+.search-summary {
+    float: right;
+    margin-right: 100px;
+}
+
+.result-page {
+    float: left;
+    font-size: 0.9em;
+    margin-right: 20px;
+}
+
+.result-count {
+    font-size: 0.9em;
+    margin-top: 10px;
+    margin-left: 70px;
 }
 

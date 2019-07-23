@@ -4,6 +4,7 @@
 	<title>SimSearch UI</title>
 	 <script src="js/jquery-3.4.1.min.js"></script>
     <script src="settings.js"></script>
+    <script src="search_settings.js"></script>
     <script src="js/semantic_search.js"></script>
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <meta charset="UTF-8">
@@ -14,24 +15,23 @@
 	<img alt="SimSearch Logo" src="images/logo.svg" class="logo" />
 </div>
 
-<div class="whole-area">
+<div class="query-area">
 
-    <div id="SemanticSearch" class="tab">
-        <!-- use SimSearch semantic search -->
-            <div class="search-container">
-                <input type="text" class="query-box" 
-                       title="your keywords" id="searchText" onkeypress="search_enter(event)" />
-                <input id="btnSearch" type="button" value="search" class="query-button" onclick="search_click()" />
-            </div>
-
-        <div class="search-area">
-            <div class="answer-container" id="search_results">
-            </div>
-            <div class="semantics" id="search_semantics">
-            </div>
-        </div>
+    <div class="search-container">
+        <label for="searchText"></label>
+        <input type="text" class="query-box"
+               title="your keywords" id="searchText" onkeypress="search_enter(event)" />
+        <input id="btnSearch" type="button" value="search" class="query-button" onclick="search_click()" />
     </div>
 
+    <div class="search-area">
+        <div class="result-count" id="result-count"></div>
+        <div class="answer-container" id="search_results">
+        </div>
+    </div>
+    <div class="search-summary">
+        <div class="result-page" id="result-page"></div>
+    </div>
 
 </div>
 
@@ -54,6 +54,13 @@
             searchText.removeAttr("disabled");
             $("#btnSearch").removeAttr("disabled");
         }
+        if (semantic_search.num_results > 0) {
+            $("#result-page").html("page " + (semantic_search.page + 1) + " of " + this.num_pages);
+            $("#result-count").html("" + semantic_search.num_results + " results");
+        } else if (semantic_search.num_results === 0) {
+            $("#result-page").html("");
+            $("#result-count").html("no results");
+        }
     }
 
     const semantic_search = new SemanticSearch(settings, update_ui);
@@ -75,6 +82,10 @@
         semantic_search.nextPage();
     }
 
+    function openUrl(url) {
+        window.open(url, '_blank');
+    }
+
     // semantic search enter key check
     function search_enter(event) {
         if (event.keyCode === 13) {
@@ -86,6 +97,7 @@
     function search_click() {
         const search_text = searchText.val();
         if (search_text.length > 1) {
+            semantic_search.page = 0;  // reset to page 0
             semantic_search.do_semantic_search(search_text);
         } else {
             alert('please enter a search query');
