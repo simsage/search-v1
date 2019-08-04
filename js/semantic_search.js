@@ -23,6 +23,11 @@ class SemanticSearch {
 
         // error message
         this.error = '';
+
+        this.fileType = [];
+        this.title = [];
+        this.url = [];
+        this.author = [];
     }
 
     refresh() {
@@ -73,10 +78,53 @@ class SemanticSearch {
     // perform a semantic search
     do_semantic_search(text) {
 
+        let query = "(body: " + text;
+        if (this.url.length > 0) {
+            query += " and (";
+            for (const i in this.url) {
+                if (i > 0) {
+                    query += " or "
+                }
+                query += "url: " + this.url[i];
+            }
+            query += ") "
+        }
+        if (this.title.length > 0) {
+            query += " and (";
+            for (const i in this.title) {
+                if (i > 0) {
+                    query += " or "
+                }
+                query += "title: " + this.title[i];
+            }
+            query += ") "
+        }
+        if (this.author.length > 0) {
+            query += " and (";
+            for (const i in this.author) {
+                if (i > 0) {
+                    query += " or "
+                }
+                query += "author: " + this.author[i];
+            }
+            query += ") "
+        }
+        if (this.fileType.length > 0) {
+            query += " and (";
+            for (const i in this.fileType) {
+                if (i > 0) {
+                    query += " or "
+                }
+                query += "type: " + this.fileType[i];
+            }
+            query += ") "
+        }
+        query += ")";
+
         let searchObj = {
             'organisationId': this.settings.organisationId,
             'kbList': settings.kbList,
-            'keywords': text,
+            'keywords': query,
             'page': this.page,
             'fragmentCount': search_settings.fragment_count,
             'maxWordDistance': search_settings.max_word_distance,
@@ -189,7 +237,11 @@ class SemanticSearch {
                 gen_html += '<div class="chat-msg">';
                 gen_html += SemanticSearch.highlight(h.textList[h.index]);
                 gen_html += '</div>';
-                gen_html += '<div class="chat-url" onclick="openUrl(\'' + h.url + '\')">' + h.url + '</div>';
+                if (h.url.indexOf("\\\\") === 0) {
+                    gen_html += '<div class="chat-url" onclick="alert(\'cannot open a UNC path\');">' + h.url + '</div>';
+                } else {
+                    gen_html += '<div class="chat-url" onclick="openUrl(\'' + h.url + '\')">' + h.url + '</div>';
+                }
                 gen_html += '</div>';
             }
         });

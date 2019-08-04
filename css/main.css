@@ -270,3 +270,69 @@
     margin-left: 70px;
 }
 
+
+.toggle-advanced-search-button {
+    margin-left: 20px;
+    margin-top: 14px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#advancedSearch {
+    display: none;
+}
+
+.search-label {
+    font-size: 0.8em;
+    width: 100px;
+    text-align: right;
+    margin-right: 10px;
+    display: inline-block;
+}
+
+.metadata-area {
+    position: absolute;
+    top: 140px;
+    right: 10px;
+    padding: 10px;
+    background: #f0f0f0;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+}
+
+.metadata-title {
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.metadata-author {
+    padding: 10px;
+}
+
+.metadata-url {
+    padding: 10px;
+}
+
+.metadata-type {
+    padding: 10px;
+}
+
+.metadata-text {
+    width: 200px;
+    border-radius: 4px;
+    padding: 4px;
+    border: 0;
+}
+
+.metadata-buttons {
+    float: right;
+}
+
+.advanced-search-tick {
+    margin-left: -1px;
+    display: none;
+}
+
+.advanced-search-tick-image {
+    width: 16px;
+}

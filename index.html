@@ -22,6 +22,8 @@
         <input type="text" class="query-box"
                title="your keywords" id="searchText" onkeypress="search_enter(event)" />
         <input id="btnSearch" type="button" value="search" class="query-button" onclick="search_click()" />
+        <input type="button" class="toggle-advanced-search-button" value="..." title="toggle advanced search" onclick="advanced_search_click(event)" />
+        <div class="advanced-search-tick"><img class="advanced-search-tick-image" src="images/tick.svg" alt="selected" title="advanced search active" /></div>
     </div>
 
     <div class="search-area">
@@ -31,6 +33,36 @@
     </div>
     <div class="search-summary">
         <div class="result-page" id="result-page"></div>
+    </div>
+
+    <div class="metadata-area" id="advancedSearch">
+        <div class="metadata-title">advanced search</div>
+        <div class="metadata-url">
+            <label class="search-label" for="txtTitle">title</label>
+            <input id="txtTitle" class="metadata-text" placeholder="title filter" type="text" onkeyup="change_advanced_search()" />
+        </div>
+        <div class="metadata-url">
+            <label class="search-label" for="txtUrl">url</label>
+            <input id="txtUrl" class="metadata-text" placeholder="url filter" type="text" onkeyup="change_advanced_search()" />
+        </div>
+        <div class="metadata-author">
+            <label class="search-label" for="txtAuthor">author</label>
+            <input id="txtAuthor" class="metadata-text" placeholder="author filter" type="text" onkeyup="change_advanced_search()" />
+        </div>
+        <div class="metadata-type">
+            <label class="search-label" for="txtTypeFilter">document type</label>
+            <select id="txtTypeFilter" name="document-type" onchange="change_advanced_search()">
+                <option value="">not selected</option>
+                <option value="html,htm">web pages</option>
+                <option value="doc,docx">word documents</option>
+                <option value="pdf">PDF documents</option>
+                <option value="xls,xlsx">spreadsheets</option>
+                <option value="jpg,jpeg,png,gif">images</option>
+            </select>
+        </div>
+        <div class="metadata-buttons">
+            <input type="button" class="metadata-button-clear" value="clear" title="clear all filters" onclick="advanced_search_clear_click()" />
+        </div>
     </div>
 
 </div>
@@ -101,6 +133,52 @@
             semantic_search.do_semantic_search(search_text);
         } else {
             alert('please enter a search query');
+        }
+    }
+
+    function advanced_search_click() {
+        const as = $("#advancedSearch");
+        if (as.css("display") === "none") {
+            as.show();
+            $("#txtTitle").focus();
+        } else {
+            as.hide();
+            $("#searchText").focus();
+        }
+    }
+
+    function advanced_search_clear_click() {
+        $("#txtTypeFilter").val("");
+        $("#txtTitle").val("");
+        $("#txtUrl").val("");
+        $("#txtAuthor").val("");
+        change_advanced_search();
+    }
+
+    function change_advanced_search() {
+        semantic_search.fileType = [];
+        semantic_search.url = [];
+        semantic_search.title = [];
+        semantic_search.author = [];
+
+        const titleFilter = $("#txtTitle").val();
+        const urlFilter = $("#txtUrl").val();
+        const authorFilter = $("#txtAuthor").val();
+        const typeFilter = $("#txtTypeFilter").val();
+        if (typeFilter.length > 0 || urlFilter.length > 0 || authorFilter.length > 0 || titleFilter.length > 0) {
+            $(".advanced-search-tick").css("display", "inline-block");
+
+            if (typeFilter.length > 0)
+                semantic_search.fileType = typeFilter.split(",");
+            if (urlFilter.length > 0)
+                semantic_search.url = urlFilter.split(",");
+            if (titleFilter.length > 0)
+                semantic_search.title = titleFilter.split(",");
+            if (authorFilter.length > 0)
+                semantic_search.author = authorFilter.split(",");
+
+        } else {
+            $(".advanced-search-tick").css("display", "none");
         }
     }
 
