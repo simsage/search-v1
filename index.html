@@ -37,6 +37,22 @@
 
     <div class="metadata-area" id="advancedSearch">
         <div class="metadata-title">advanced search</div>
+        <div class="metadata-type">
+            <label class="search-label" for="txtTypeFilter">document type</label>
+            <select id="txtTypeFilter" name="document-type" onchange="change_advanced_search()">
+                <option value="">not selected</option>
+                <option value="html,htm">web pages</option>
+                <option value="doc,docx">word documents</option>
+                <option value="pdf">PDF documents</option>
+                <option value="xls,xlsx">spreadsheets</option>
+                <option value="jpg,jpeg,png,gif">images</option>
+            </select>
+        </div>
+        <div class="metadata-type">
+            <label class="search-label" for="txtTypeFilter">knowledge base</label>
+            <select id="txtKnowledgeBase" name="knowledge-base" onchange="change_advanced_search()">
+            </select>
+        </div>
         <div class="metadata-url">
             <label class="search-label" for="txtTitle">title</label>
             <input id="txtTitle" class="metadata-text" placeholder="title filter" type="text" onkeyup="change_advanced_search()" />
@@ -49,17 +65,6 @@
             <label class="search-label" for="txtAuthor">author</label>
             <input id="txtAuthor" class="metadata-text" placeholder="author filter" type="text" onkeyup="change_advanced_search()" />
         </div>
-        <div class="metadata-type">
-            <label class="search-label" for="txtTypeFilter">document type</label>
-            <select id="txtTypeFilter" name="document-type" onchange="change_advanced_search()">
-                <option value="">not selected</option>
-                <option value="html,htm">web pages</option>
-                <option value="doc,docx">word documents</option>
-                <option value="pdf">PDF documents</option>
-                <option value="xls,xlsx">spreadsheets</option>
-                <option value="jpg,jpeg,png,gif">images</option>
-            </select>
-        </div>
         <div class="metadata-buttons">
             <input type="button" class="metadata-button-clear" value="clear" title="clear all filters" onclick="advanced_search_clear_click()" />
         </div>
@@ -70,6 +75,7 @@
 
 <script>
     var searchText = $("#searchText");
+    $("#txtKnowledgeBase").html(SemanticSearch.kbOptions());
     searchText.focus();
 
     // callback to change html-dom if it needs changing
@@ -157,6 +163,7 @@
 
     function change_advanced_search() {
         semantic_search.fileType = [];
+        semantic_search.kb = null;
         semantic_search.url = [];
         semantic_search.title = [];
         semantic_search.author = [];
@@ -165,6 +172,8 @@
         const urlFilter = $("#txtUrl").val();
         const authorFilter = $("#txtAuthor").val();
         const typeFilter = $("#txtTypeFilter").val();
+        const kb = $("#txtKnowledgeBase").val();
+        semantic_search.kb = settings.kbList[kb];
         if (typeFilter.length > 0 || urlFilter.length > 0 || authorFilter.length > 0 || titleFilter.length > 0) {
             $(".advanced-search-tick").css("display", "inline-block");
 

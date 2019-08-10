@@ -28,6 +28,7 @@ class SemanticSearch {
         this.title = [];
         this.url = [];
         this.author = [];
+        this.kb = settings.kbList[0];
     }
 
     refresh() {
@@ -123,8 +124,9 @@ class SemanticSearch {
 
         let searchObj = {
             'organisationId': this.settings.organisationId,
-            'kbList': settings.kbList,
-            'keywords': query,
+            'kbList': [{kbId: this.kb.kbId, sid: this.kb.sid}],
+            'botQuery': text,
+            'superSearch': query,
             'page': this.page,
             'fragmentCount': search_settings.fragment_count,
             'maxWordDistance': search_settings.max_word_distance,
@@ -265,6 +267,16 @@ class SemanticSearch {
         str = str.replace(/{:hl1}/g, "</span>");
         str = str.replace(/{:hl2}/g, "</span>");
         str = str.replace(/{:hl3}/g, "</span>");
+        return str;
+    }
+
+    // get the knowledge base options
+    static kbOptions() {
+        let str = "";
+        for (const index in settings.kbList) {
+            const item = settings.kbList[index];
+            str += "<option value='" + index + "'>" + item.name + "</option>";
+        }
         return str;
     }
 
