@@ -291,12 +291,31 @@ class SemanticSearch {
         return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     }
 
+    // do we hav access to local-storage?
+    hasLocalStorage(){
+        try {
+            const test = 'test';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+
     // get or create a session based client id for SimSage usage
-    static getClientId() {
-        var clientId = localStorage.getItem("simsearch_client_id");
+    getClientId() {
+        let clientId = "";
+        const key = 'simsearch_client_id';
+        const hasLs = this.hasLocalStorage();
+        if (hasLs) {
+            clientId = localStorage.getItem(key);
+        }
         if (!clientId || clientId.length === 0) {
             clientId = SemanticSearch.guid(); // create a new client id
-            localStorage.setItem("simsearch_client_id", clientId);
+            if (hasLs) {
+                localStorage.setItem(key, clientId);
+            }
         }
         return clientId;
     }
