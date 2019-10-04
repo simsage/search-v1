@@ -4,9 +4,10 @@
 
 class SemanticSearch {
 
-    constructor(settings, update_ui) {
+    constructor(settings, update_ui, search_control) {
         this.settings = settings;
         this.update_ui = update_ui;
+        this.search_control = search_control;
 
         // the current semantic search set
         this.current_text = '';  // current search text
@@ -29,6 +30,9 @@ class SemanticSearch {
         this.url = [];
         this.author = [];
         this.kb = settings.kbList[0];
+
+        // semantic item display
+        this.semantic_html = '';
     }
 
     refresh() {
@@ -178,6 +182,29 @@ class SemanticSearch {
                     if (parseInt(divided) < divided) {
                         self.num_pages += 1;
                     }
+
+                    // do we have a semantic set?
+                    self.semantic_html = '';
+                    if (data.semanticSet) {
+                        const key_list = [];
+                        for (const key in data.semanticSet) {
+                            key_list.push(key);
+                        }
+                        key_list.sort();
+                        for (const key of key_list) {
+                            if (data.semanticSet.hasOwnProperty(key)) {
+                                const item_list = data.semanticSet[key];
+                                if (item_list.length > 0) {
+                                    self.semantic_html += '<div class="semantic-key">' + key + '</div>' + '\n';
+                                    for (const item of item_list) {
+                                        self.semantic_html += '<div class="semantic-entry" title="' + item +
+                                            '" onclick="semantic_search.select(\'' + item + '\')">' +
+                                            SemanticSearch.adjust_size(item) + '</div>' + '\n';
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 self.refresh();
             }
@@ -191,6 +218,55 @@ class SemanticSearch {
             self.busy = false;
             self.refresh();
         });
+    }
+
+    // access the semantic set menu as a set of html items
+    get_semantic_set_html() {
+        return this.semantic_html;
+    }
+
+    select(semantic_item) {
+        let text_list = this.search_control.val().split(' ');
+        let found = false;
+        for (const item of text_list) {
+            if (item.toLowerCase() === semantic_item.toLowerCase()) {
+                found = true;
+            }
+        }
+        // reconstruct the input
+        const new_text_list = [];
+        if (found) {
+            // remove it
+            for (const item of text_list) {
+                if (item.toLowerCase() !== semantic_item.toLowerCase()) {
+                    new_text_list.push(item);
+                }
+            }
+        } else {
+            // copy old list and add new item
+            for (const item of text_list) {
+                new_text_list.push(item);
+            }
+            new_text_list.push(semantic_item);
+        }
+        this.search_control.val(SemanticSearch.join(new_text_list));
+    }
+
+    // make sure a string doesn't exceed a certain size - otherwise cut it down
+    static adjust_size(str) {
+        if (str.length > 20) {
+            return str.substr(0,10) + "..." + str.substr(str.length - 10);
+        }
+        return str;
+    }
+
+    // join string items in a list together with spaces
+    static join(list) {
+        let str = '';
+        for (const item of list) {
+            str += ' ' + item;
+        }
+        return str.trim();
     }
 
     // get the html for the search results neatly drawn out
@@ -292,7 +368,7 @@ class SemanticSearch {
     }
 
     // do we hav access to local-storage?
-    hasLocalStorage(){
+    static hasLocalStorage(){
         try {
             const test = 'test';
             localStorage.setItem(test, test);
@@ -304,10 +380,10 @@ class SemanticSearch {
     }
 
     // get or create a session based client id for SimSage usage
-    getClientId() {
+    static getClientId() {
         let clientId = "";
         const key = 'simsearch_client_id';
-        const hasLs = this.hasLocalStorage();
+        const hasLs = SemanticSearch.hasLocalStorage();
         if (hasLs) {
             clientId = localStorage.getItem(key);
         }

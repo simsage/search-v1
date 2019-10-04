@@ -1,4 +1,8 @@
 
+.body-style {
+    min-width: 1024px;
+}
+
 .logo-container {
 	margin-left: 20px;
 	margin-top: 23px;
@@ -72,6 +76,7 @@
 
 .chat-msg {
     float: left;
+    margin-left: 50px;
     font-size: 0.9em;
     width: 90%;
     margin-top: 8px;
@@ -221,36 +226,45 @@
     float: left;
 }
 
+.two-columns {
+    display: inline;
+}
+
+.semantic-container {
+    min-width: 150px;
+    min-height: 400px;
+    margin-top: 20px;
+    float: left;
+    overflow-y: auto;
+    margin-left: 10px;
+    border-radius: 4px;
+    background-color: #fafafa;
+    border-width: thin;
+    border-style: solid;
+    border-color: coral;
+}
+
 .answer-container {
-    width: 100%;
-    min-width: 400px;
+    width: 70%;
+    min-width: 500px;
     margin-top: 10px;
     float: left;
     overflow-y: auto;
     margin-left: 50px;
 }
 
-.semantic-entry {
-}
-
 .semantic-key {
-    margin-top: 5px;
+    margin-top: 10px;
     margin-bottom: 2px;
-    font-size: 0.9em;
-    font-weight: bold;
-}
-
-.semantic-value-container {
-    max-height: 80px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    white-space: nowrap;
-    margin-bottom: 20px;
-}
-
-.semantic-value {
+    margin-left: 5px;
     font-size: 0.8em;
-    margin-left: 15px;
+    font-weight: 600;
+}
+
+.semantic-entry {
+    margin-left: 12px;
+    font-size: 0.9em;
+    cursor: pointer;
 }
 
 .search-summary {

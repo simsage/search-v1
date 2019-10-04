@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <meta charset="UTF-8">
 </head>
-<body>
+<body class="body-style">
 
 <div class="logo-container">
 	<img alt="SimSearch Logo" src="images/logo.svg" class="logo" />
@@ -18,7 +18,6 @@
 <div class="query-area">
 
     <div class="search-container">
-        <label for="searchText"></label>
         <input type="text" class="query-box"
                title="your keywords" id="searchText" onkeypress="search_enter(event)" />
         <input id="btnSearch" type="button" value="search" class="query-button" onclick="search_click()" />
@@ -28,7 +27,9 @@
 
     <div class="search-area">
         <div class="result-count" id="result-count"></div>
-        <div class="answer-container" id="search_results">
+        <div class="two-columns">
+            <div id="semantic-container" class="semantic-container"></div>
+            <div class="answer-container" id="search_results"></div>
         </div>
     </div>
     <div class="search-summary">
@@ -84,6 +85,7 @@
             alert(search.error);
         } else {
             $("#search_results").html(search.get_semantic_search_html());
+            $("#semantic-container").html(search.get_semantic_set_html());
         }
         if (search.busy) {
             searchText.attr("disabled", "true");
@@ -101,7 +103,7 @@
         }
     }
 
-    const semantic_search = new SemanticSearch(settings, update_ui);
+    const semantic_search = new SemanticSearch(settings, update_ui, searchText);
 
     // pagination stubs used by generated render code
     function doInnerPrev(url) {

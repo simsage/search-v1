@@ -12,6 +12,5 @@ search_settings = {
     // ask bot too?
     ask_bot: true,
     // and how sensitive the bot response should be
-    bot_threshold: 0.9,
+    bot_threshold: 0.775,
 };
-
