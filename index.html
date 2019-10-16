@@ -1,132 +1,170 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>SimSearch UI</title>
-	 <script src="js/jquery-3.4.1.min.js"></script>
-    <script src="settings.js"></script>
-    <script src="search_settings.js"></script>
-    <script src="js/semantic_search.js"></script>
-    <link rel="stylesheet" type="text/css" href="css/main.css" />
-    <meta charset="UTF-8">
+	<title>SimSage Search</title>
+
+	<script src="js/jquery-3.4.1.min.js"></script>
+	<script src="js/template.js"></script>
+	<script src="settings.js"></script>
+	<script src="search_settings.js"></script>
+	<script src="js/semantic_search.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="css/search.css">
 </head>
 <body class="body-style">
 
-<div class="logo-container">
-	<img alt="SimSearch Logo" src="images/logo.svg" class="logo" />
-</div>
+	<div class="view-type-container">
+		<div class="view-type" title="text view" onclick="search.text_view()">
+			<img src="images/text-lines.svg" class="view-image-1" alt="text view" onclick="search.text_view()" />
+		</div>
+		<div class="view-type" title="image view" onclick="search.image_view()">
+			<img src="images/view.svg" class="view-image-2" alt="image view" onclick="search.image_view()" />
+		</div>
+	</div>
 
-<div class="query-area">
-
-    <div class="search-container">
-        <input type="text" class="query-box"
-               title="your keywords" id="searchText" onkeypress="search_enter(event)" />
-        <input id="btnSearch" type="button" value="search" class="query-button" onclick="search_click()" />
-        <input type="button" class="toggle-advanced-search-button" value="..." title="toggle advanced search" onclick="advanced_search_click(event)" />
-        <div class="advanced-search-tick"><img class="advanced-search-tick-image" src="images/tick.svg" alt="selected" title="advanced search active" /></div>
-    </div>
-
-    <div class="search-area">
-        <div class="result-count" id="result-count"></div>
-        <div class="two-columns">
-            <div id="semantic-container" class="semantic-container"></div>
-            <div class="answer-container" id="search_results"></div>
-        </div>
-    </div>
-    <div class="search-summary">
-        <div class="result-page" id="result-page"></div>
-    </div>
-
-    <div class="metadata-area" id="advancedSearch">
-        <div class="metadata-title">advanced search</div>
-        <div class="metadata-type">
-            <label class="search-label" for="txtTypeFilter">document type</label>
-            <select id="txtTypeFilter" name="document-type" onchange="change_advanced_search()">
-                <option value="">not selected</option>
-                <option value="html,htm">web pages</option>
-                <option value="doc,docx">word documents</option>
-                <option value="pdf">PDF documents</option>
-                <option value="xls,xlsx">spreadsheets</option>
-                <option value="jpg,jpeg,png,gif">images</option>
-            </select>
-        </div>
-        <div class="metadata-type">
-            <label class="search-label" for="txtTypeFilter">knowledge base</label>
-            <select id="txtKnowledgeBase" name="knowledge-base" onchange="change_advanced_search()">
-            </select>
-        </div>
-        <div class="metadata-url">
-            <label class="search-label" for="txtTitle">title</label>
-            <input id="txtTitle" class="metadata-text" placeholder="title filter" type="text" onkeyup="change_advanced_search()" />
-        </div>
-        <div class="metadata-url">
-            <label class="search-label" for="txtUrl">url</label>
-            <input id="txtUrl" class="metadata-text" placeholder="url filter" type="text" onkeyup="change_advanced_search()" />
-        </div>
-        <div class="metadata-author">
-            <label class="search-label" for="txtAuthor">author</label>
-            <input id="txtAuthor" class="metadata-text" placeholder="author filter" type="text" onkeyup="change_advanced_search()" />
-        </div>
-        <div class="metadata-buttons">
-            <input type="button" class="metadata-button-clear" value="clear" title="clear all filters" onclick="advanced_search_clear_click()" />
-        </div>
-    </div>
-
-</div>
+	<div class="centered-page">
+		<div class="search-control">
+			<div class="advanced-search" title="advanced search" onclick="advanced_search_click()">
+				<div id="advancedSearchButton" class="select-style"><div class="select-text">filter</div>
+					<div class="select-triangle">
+						<img src="images/down-triangle.svg" alt="select" class="triangle-image">
+					</div>
+				</div>
+			</div>
+			<div class="search-text-box">
+				<input type="text" class="input-text" id="txtSearch" onclick="search.hide_advanced_search()" onkeypress="search_enter(event)">
+			</div>
+			<div id="btnSearch" class="search-button-box" title="search" onclick="search_click()">
+				<img src="images/search.svg" class="search-image" alt="search" onclick="search_click()">
+			</div>
+		</div>
+	</div>
 
 
-<script>
-    var searchText = $("#searchText");
-    $("#txtKnowledgeBase").html(SemanticSearch.kbOptions());
-    searchText.focus();
+	<div class="centered-page">
+		<div id="advancedSearch" class="metadata-area" style="display: none;">
+			<div class="floaty">
+				<div class="metadata-type">
+					<label class="search-label" for="txtTypeFilter">document type</label>
+					<select id="txtTypeFilter" name="document-type" class="select" onchange="change_advanced_search()">
+						<option value="">not selected</option>
+						<option value="html,htm">web pages</option>
+						<option value="doc,docx">word documents</option>
+						<option value="pdf">PDF documents</option>
+						<option value="xls,xlsx">spreadsheets</option>
+						<option value="jpg,jpeg,png,gif">images</option>
+					</select>
+				</div>
+				<div class="metadata-type">
+					<label class="search-label" for="ddKnowledgeBase">knowledge base</label>
+					<select id="ddKnowledgeBase" name="knowledge-base" class="select" onchange="change_advanced_search()">
+					</select>
+				</div>
+				<div class="metadata-type">
+					<label class="search-label" for="ddSource">source</label>
+					<select id="ddSource" name="source" class="select" onchange="change_advanced_search()">
+					</select>
+				</div>
+				<div class="metadata-url">
+					<label class="search-label" for="txtTitle">title</label>
+					<input id="txtTitle" class="metadata-text" placeholder="title filter" type="text" onkeyup="change_advanced_search()" />
+				</div>
+				<div class="metadata-url">
+					<label class="search-label" for="txtUrl">url</label>
+					<input id="txtUrl" class="metadata-text" placeholder="url filter" type="text" onkeyup="change_advanced_search()" />
+				</div>
+				<div class="metadata-author">
+					<label class="search-label" for="txtAuthor">author</label>
+					<input id="txtAuthor" class="metadata-text" placeholder="author filter" type="text" onkeyup="change_advanced_search()" />
+				</div>
+				<div class="metadata-buttons">
+					<div class="metadata-button-clear" title="clear all filters" onclick="advanced_search_clear_click()">clear</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    // callback to change html-dom if it needs changing
-    function update_ui(search) {
+	<br />
+	<br />
+
+
+	<div id="results" class="centered-page">
+	</div>
+
+	<!-- details page -->
+	<div id="divDetails" class="details-page" style="display: none;">
+	</div>
+
+	<div class="powered-by" id="poweredBy">
+		<img src="images/powered-by-simsage.svg" alt="powered by" title="powered by SimSage" />
+	</div>
+
+</body>
+
+<script lang="javascript">
+
+	const search_ctrl = $("#txtSearch");
+	const dd_kb = $("#ddKnowledgeBase");
+	const dd_source = $("#ddSource");
+	const btn_search = $("#btnSearch");
+	const results = $("#results");
+	const details = $("#divDetails");
+	const advanced_search = $("#advancedSearch");
+	const poweredBy = $("#poweredBy");
+	const advanced_search_button = $("#advancedSearchButton");
+
+	search_ctrl.focus();
+
+	function update_ui(search) {
         if (search.error.length > 0) {
             alert(search.error);
         } else {
-            $("#search_results").html(search.get_semantic_search_html());
-            $("#semantic-container").html(search.get_semantic_set_html());
+        	const html = search.get_semantic_search_html();
+            results.html(html);
+        }
+        if (this.semantic_search_results.length > 0) {
+			poweredBy.hide();
+		} else {
+			poweredBy.show();
+		}
+        dd_kb.html(search.kbOptions());
+        if (search.kb && search.kb.id) {
+            dd_kb.val(search.kb.id);
+        }
+        dd_source.html(search.sourceOptions());
+        if (search.source && search.source.id) {
+            dd_source.val(search.source.id);
         }
         if (search.busy) {
-            searchText.attr("disabled", "true");
-            $("#btnSearch").attr("disabled", "true");
+            search_ctrl.attr("disabled", "true");
+            btn_search.attr("disabled", "true");
         } else {
-            searchText.removeAttr("disabled");
-            $("#btnSearch").removeAttr("disabled");
+            search_ctrl.removeAttr("disabled");
+            btn_search.removeAttr("disabled");
         }
-        if (semantic_search.num_results > 0) {
-            $("#result-page").html("page " + (semantic_search.page + 1) + " of " + this.num_pages);
-            $("#result-count").html("" + semantic_search.num_results + " results");
-        } else if (semantic_search.num_results === 0) {
-            $("#result-page").html("");
-            $("#result-count").html("no results");
-        }
-    }
+        if (search.show_details) {
+			details.html(search.details_html);
+			details.show();
+		} else {
+			details.hide();
+		}
+        if (search.show_advanced_search) {
+			advanced_search.show();
+		} else {
+			advanced_search.hide();
+		}
+        if (search.has_advanced_selection) {
+			advanced_search_button.removeClass("select-style");
+			advanced_search_button.addClass("select-style-has-selection");
+		} else {
+			advanced_search_button.removeClass("select-style-has-selection");
+			advanced_search_button.addClass("select-style");
+		}
+		search_ctrl.focus();
+	}
 
-    const semantic_search = new SemanticSearch(settings, update_ui, searchText);
+	const search = new SemanticSearch(settings, update_ui, search_ctrl);
 
-    // pagination stubs used by generated render code
-    function doInnerPrev(url) {
-        semantic_search.doInnerPrev(url);
-    }
-
-    function doInnerNext(url) {
-        semantic_search.doInnerNext(url);
-    }
-
-    function prevPage() {
-        semantic_search.prevPage();
-    }
-
-    function nextPage() {
-        semantic_search.nextPage();
-    }
-
-    function openUrl(url) {
-        window.open(url, '_blank');
-    }
-
-    // semantic search enter key check
+	    // semantic search enter key check
     function search_enter(event) {
         if (event.keyCode === 13) {
             search_click();
@@ -135,66 +173,61 @@
 
     // do a semantic search
     function search_click() {
-        const search_text = searchText.val();
-        if (search_text.length > 1) {
-            semantic_search.page = 0;  // reset to page 0
-            semantic_search.do_semantic_search(search_text);
-        } else {
-            alert('please enter a search query');
-        }
+        const search_text = search_ctrl.val();
+		search.reset_pagination();
+		search.do_semantic_search(search_text);
     }
 
     function advanced_search_click() {
-        const as = $("#advancedSearch");
-        if (as.css("display") === "none") {
-            as.show();
-            $("#txtTitle").focus();
-        } else {
-            as.hide();
-            $("#searchText").focus();
-        }
+    	search.toggle_advanced_search();
     }
 
-    function advanced_search_clear_click() {
-        $("#txtTypeFilter").val("");
-        $("#txtTitle").val("");
-        $("#txtUrl").val("");
-        $("#txtAuthor").val("");
-        change_advanced_search();
-    }
+	function advanced_search_clear_click() {
+		$("#txtTypeFilter").val("");
+		$("#txtTitle").val("");
+		$("#txtUrl").val("");
+		$("#txtAuthor").val("");
+		$("#ddSource").val("");
+		change_advanced_search();
+	}
 
-    function change_advanced_search() {
-        semantic_search.fileType = [];
-        semantic_search.kb = null;
-        semantic_search.url = [];
-        semantic_search.title = [];
-        semantic_search.author = [];
+	function change_advanced_search() {
+		search.fileType = [];
+		search.kb = null;
+		search.source = null;
+		search.url = [];
+		search.title = [];
+		search.author = [];
+		search.source = '';
+		search.has_advanced_selection = false;
 
-        const titleFilter = $("#txtTitle").val();
-        const urlFilter = $("#txtUrl").val();
-        const authorFilter = $("#txtAuthor").val();
-        const typeFilter = $("#txtTypeFilter").val();
-        const kb = $("#txtKnowledgeBase").val();
-        semantic_search.kb = settings.kbList[kb];
-        if (typeFilter.length > 0 || urlFilter.length > 0 || authorFilter.length > 0 || titleFilter.length > 0) {
-            $(".advanced-search-tick").css("display", "inline-block");
+		const titleFilter = $("#txtTitle").val();
+		const urlFilter = $("#txtUrl").val();
+		const authorFilter = $("#txtAuthor").val();
+		const typeFilter = $("#txtTypeFilter").val();
+		const kb = search.set_kb($("#ddKnowledgeBase").val());
+		const source = search.set_source($("#ddSource").val());
+		if (typeFilter.length > 0 || urlFilter.length > 0 || authorFilter.length > 0 || titleFilter.length > 0) {
+			search.has_advanced_selection = true;
+			$(".advanced-search-tick").css("display", "inline-block");
+			if (typeFilter.length > 0)
+				search.fileType = typeFilter.split(",");
+			if (urlFilter.length > 0)
+				search.url = urlFilter.split(",");
+			if (titleFilter.length > 0)
+				search.title = titleFilter.split(",");
+			if (authorFilter.length > 0)
+				search.author = authorFilter.split(",");
+		} else {
+			$(".advanced-search-tick").css("display", "none");
+		}
+	}
 
-            if (typeFilter.length > 0)
-                semantic_search.fileType = typeFilter.split(",");
-            if (urlFilter.length > 0)
-                semantic_search.url = urlFilter.split(",");
-            if (titleFilter.length > 0)
-                semantic_search.title = titleFilter.split(",");
-            if (authorFilter.length > 0)
-                semantic_search.author = authorFilter.split(",");
-
-        } else {
-            $(".advanced-search-tick").css("display", "none");
-        }
-    }
-
+	// load initial document settings from server
+    $( document ).ready(function() {
+        search.getSemanticSearchInfo();
+    });
 
 </script>
 
-</body>
 </html>

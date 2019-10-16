@@ -6,7 +6,7 @@ search_settings = {
     // number of fragments per result max
     fragment_count : 5,
     // distance between hits before merging into one sentence
-    max_word_distance: 10,
+    max_word_distance: 0,
     // score cut-off
     score_threshold: 0.0,
     // ask bot too?

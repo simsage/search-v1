@@ -19,6 +19,9 @@ class SemanticSearch {
         this.num_results = -1;
         this.num_pages = 0;
 
+        this.prev_query = ''; // shard logic: what was asked previously
+        this.shard_size_list = [];
+
         // are we busy searching?
         this.busy = false;
 
@@ -29,10 +32,67 @@ class SemanticSearch {
         this.title = [];
         this.url = [];
         this.author = [];
-        this.kb = settings.kbList[0];
+        this.kb_list = [];
+        this.kb = null;
+        this.source = null;
 
-        // semantic item display
-        this.semantic_html = '';
+        // semantic set
+        this.semantic_set = {};
+
+        // details view
+        this.show_details = false;
+        this.details_html = '';
+
+        // advanced search menu visibility
+        this.has_advanced_selection = false;
+        this.show_advanced_search = false;
+        this.view = 'lines';
+    }
+
+    text_view() {
+        this.view = 'lines';
+        this.refresh();
+    }
+
+    image_view() {
+        this.view = 'images';
+        this.refresh();
+    }
+
+    // load the initial information needed for semantic search from the server
+    getSemanticSearchInfo() {
+        const self = this;
+        const url = this.settings.base_url + '/knowledgebase/search/info/' + encodeURIComponent(this.settings.organisationId);
+
+        this.error = '';
+        this.busy = true;
+
+        this.refresh(); // notify ui
+
+        jQuery.ajax({
+            headers: {
+                'Content-Type': 'application/json',
+                'API-Version': this.settings.api_version,
+            },
+            'type': 'GET',
+            'url': url,
+            'dataType': 'json',
+            'success': function (data) {
+                self.kb_list = data.kbList;
+                if (self.kb_list.length > 0) {
+                    self.kb = self.kb_list[0];
+                }
+                self.busy = false;
+                self.refresh();
+            }
+
+        })
+        .fail(function (err) {
+            console.error(JSON.stringify(err));
+            self.error = err;
+            self.busy = false;
+            self.refresh();
+        });
     }
 
     refresh() {
@@ -80,12 +140,39 @@ class SemanticSearch {
         }
     }
 
+    // reset the variables used in determining pagination if the query has changed
+    reset_pagination() {
+        if (this.current_text !== this.prev_query) {
+            this.prev_query = this.current_text;
+            this.page = 0;  // reset to page 0
+            this.shard_size_list = [];
+        }
+    }
+
+    toggle_advanced_search() {
+        this.show_advanced_search = !this.show_advanced_search;
+        this.refresh();
+    }
+
+    hide_advanced_search() {
+        this.show_advanced_search = false;
+        this.refresh();
+    }
+
     // perform a semantic search
     do_semantic_search(text) {
-
-        let query = "(body: " + text;
+        let query = "(";
+        let needsAnd = false;
+        if (text.length > 0) {
+            query += "body: " + text;
+            needsAnd = true;
+        }
         if (this.url.length > 0) {
-            query += " and (";
+            if (needsAnd)
+                query += " and (";
+            else
+                query += " (";
+            needsAnd = true;
             for (const i in this.url) {
                 if (i > 0) {
                     query += " or "
@@ -95,7 +182,11 @@ class SemanticSearch {
             query += ") "
         }
         if (this.title.length > 0) {
-            query += " and (";
+            if (needsAnd)
+                query += " and (";
+            else
+                query += " (";
+            needsAnd = true;
             for (const i in this.title) {
                 if (i > 0) {
                     query += " or "
@@ -105,7 +196,11 @@ class SemanticSearch {
             query += ") "
         }
         if (this.author.length > 0) {
-            query += " and (";
+            if (needsAnd)
+                query += " and (";
+            else
+                query += " (";
+            needsAnd = true;
             for (const i in this.author) {
                 if (i > 0) {
                     query += " or "
@@ -115,7 +210,11 @@ class SemanticSearch {
             query += ") "
         }
         if (this.fileType.length > 0) {
-            query += " and (";
+            if (needsAnd)
+                query += " and (";
+            else
+                query += " (";
+            needsAnd = true;
             for (const i in this.fileType) {
                 if (i > 0) {
                     query += " or "
@@ -125,16 +224,28 @@ class SemanticSearch {
             query += ") "
         }
         query += ")";
+        if (query.length <= 2) {
+            alert('please enter a search query');
+            return;
+        }
+
+        this.show_advanced_search = false;
+        let source_id = '';
+        if (this.source !== null) {
+            source_id = this.source.id;
+        }
 
         let searchObj = {
             'organisationId': this.settings.organisationId,
-            'kbList': [{kbId: this.kb.kbId, sid: this.kb.sid}],
+            'kbList': [{"kbId": this.kb.id, "sid": this.kb.sid}],
+            'source': source_id,
             'botQuery': text,
             'superSearch': query,
             'page': this.page,
+            'pageSize': search_settings.page_size,
             'fragmentCount': search_settings.fragment_count,
             'maxWordDistance': search_settings.max_word_distance,
-            'numResults': search_settings.page_size,
+            'shardSizeList': this.shard_size_list,
             'scoreThreshold': search_settings.score_threshold,
             'askBot': search_settings.ask_bot,
             'botThreshold': search_settings.bot_threshold,
@@ -164,9 +275,12 @@ class SemanticSearch {
 
                 self.semantic_search_results = [];
                 self.semantic_search_result_map = {};
+                self.semantic_set = {};
 
                 if (data && data.resultList) {
 
+                    self.shard_size_list = data.shardSizeList;
+                    self.semantic_set = data.semanticSet;
                     data.resultList.map(function (sr) {
                         // enhance search result for display
                         sr['index'] = 0;  // inner offset index
@@ -181,29 +295,6 @@ class SemanticSearch {
                     self.num_pages = parseInt(divided);
                     if (parseInt(divided) < divided) {
                         self.num_pages += 1;
-                    }
-
-                    // do we have a semantic set?
-                    self.semantic_html = '';
-                    if (data.semanticSet) {
-                        const key_list = [];
-                        for (const key in data.semanticSet) {
-                            key_list.push(key);
-                        }
-                        key_list.sort();
-                        for (const key of key_list) {
-                            if (data.semanticSet.hasOwnProperty(key)) {
-                                const item_list = data.semanticSet[key];
-                                if (item_list.length > 0) {
-                                    self.semantic_html += '<div class="semantic-key">' + key + '</div>' + '\n';
-                                    for (const item of item_list) {
-                                        self.semantic_html += '<div class="semantic-entry" title="' + item +
-                                            '" onclick="semantic_search.select(\'' + item + '\')">' +
-                                            SemanticSearch.adjust_size(item) + '</div>' + '\n';
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
                 self.refresh();
@@ -271,90 +362,120 @@ class SemanticSearch {
 
     // get the html for the search results neatly drawn out
     get_semantic_search_html() {
-        let list = this.semantic_search_results.slice(); // copy
-        let gen_html = '';
-        list.map(function (h) {
-            if (h.botResult) {
-                gen_html += '<div class="bot-capsule">';
-                gen_html += '<div class="bot-simsage-logo">';
-                gen_html += '<img class="bot-simsage-logo-size" src="images/tinman.svg" alt="SimSage" />';
-                gen_html += '</div>';
-                gen_html += '<div class="bot-msg">';
-                gen_html += h.textList[0];
-                gen_html += '</div>';
-                if (h.url.length > 0) {
-                    gen_html += '<div class="bot-link">';
-                    gen_html += '<a href="' + h.url + '" target="_blank">' + h.url + '</a>';
-                    gen_html += '</div>';
-                }
-                gen_html += '</div>';
+        const num_results = this.semantic_search_results.length;
+        if (num_results > 0 && this.kb && this.kb.id) {
+            const organisation_id = this.settings.organisationId;
+            const kb_id = this.kb.id;
+            let list = this.semantic_search_results.slice(); // copy
+            let gen_html = '';
+            if (this.view === 'lines') {
+                gen_html = '<div class="search-background">';
+                gen_html += render_semantics(this.semantic_set);
+                const base_url = this.settings.base_url;
+                list.map(function (h) {
+                    if (h.botResult) {
+                        gen_html += render_bot(h.url, h.textList[0]);
+                    } else {
+                        const text = SemanticSearch.highlight(h.textList[h.index]);
+                        gen_html += render_result(organisation_id, kb_id, h.index, h.title, h.author, h.url, h.urlId,
+                                                  h.num_results, text, base_url);
+                    }
+                });
 
-            } else {
-                gen_html += '<div class="chat-capsule">';
+            } else if (this.view === 'images') {
+                gen_html = '<div class="search-background">';
+                gen_html += render_semantics(this.semantic_set);
+                const base_url = this.settings.base_url;
+                list.map(function (h) {
+                    if (h.botResult) {
+                        gen_html += render_bot(h.url, h.textList[0]);
+                    } else {
+                        const text = SemanticSearch.highlight(h.textList[h.index]);
+                        gen_html += render_result_images(organisation_id, kb_id, h.index, h.title, h.author, h.url, h.urlId,
+                                                         h.num_results, text, base_url);
+                    }
+                });
 
-                // inner navigation
-                gen_html += "<div class='searchInsideNav'>";
-                gen_html += "    <div onclick='doInnerPrev(\"" + h.url + "\")'";
-                if (h.index > 0)
-                    gen_html += "         class='insideNavButtonStyle'>&lt;</div>";
-                else
-                    gen_html += "         class='insideNavButtonStyleDisabled'>&lt;</div>";
-                gen_html += "    <div onclick='doInnerNext(\"" + h.url + "\")'";
-                if (h.index + 1 < h.num_results)
-                    gen_html += "         class='insideNavButtonStyle'>&gt;</div>";
-                else
-                    gen_html += "         class='insideNavButtonStyleDisabled'>&gt;</div>";
-                gen_html += "</div>";
-
-                gen_html += '<div class="chat-title">' + h.title;
-                if (h.author && h.author.length > 0) {
-                    gen_html += " (" + h.author + ")"
-                }
-                gen_html += '</div>';
-
-                gen_html += '<div class="chat-msg">';
-                gen_html += SemanticSearch.highlight(h.textList[h.index]);
-                gen_html += '</div>';
-                if (h.url.indexOf("\\\\") === 0) {
-                    gen_html += '<div class="chat-url" onclick="alert(\'cannot open a UNC path\');">' + h.url + '</div>';
-                } else {
-                    gen_html += '<div class="chat-url" onclick="openUrl(\'' + h.url + '\')">' + h.url + '</div>';
-                }
-                gen_html += '</div>';
             }
-        });
-
-        // add pagination at the bottom
-        gen_html += '<div class="paginationNav">';
-        const classStr1 = ((this.page > 0) && !this.busy) ? "paginationButton" : "paginationButtonDisabled";
-        gen_html += '    <div id="btnPrev" class="' + classStr1 + '" onclick="prevPage()">prev</div>';
-        const classStr2 = (((this.page + 1) < this.num_pages) && !this.busy) ? "paginationButton" : "paginationButtonDisabled";
-        gen_html += '    <div id="btnNext" class="' + classStr2 + '" onclick="nextPage()">next</div>';
-        gen_html += '</div>';
-
-        return gen_html;
+            gen_html += render_pagination(this.page, this.num_pages, this.busy, this.num_results);
+            gen_html += '</div>';
+            return gen_html;
+        }
+        return "";
     }
 
-
     static highlight(str) {
-        str = str.replace(/{hl1:}/g, "<span class='hl1'>");
-        str = str.replace(/{hl2:}/g, "<span class='hl2'>");
-        str = str.replace(/{hl3:}/g, "<span class='hl3'>");
-        str = str.replace(/{:hl1}/g, "</span>");
-        str = str.replace(/{:hl2}/g, "</span>");
-        str = str.replace(/{:hl3}/g, "</span>");
-        return str;
+        let str2 = str.replace(/{hl1:}/g, "<span class='hl1'>");
+        str2 = str2.replace(/{hl2:}/g, "<span class='hl2'>");
+        str2 = str2.replace(/{hl3:}/g, "<span class='hl3'>");
+        str2 = str2.replace(/{:hl1}/g, "</span>");
+        str2 = str2.replace(/{:hl2}/g, "</span>");
+        str2 = str2.replace(/{:hl3}/g, "</span>");
+        return str2;
     }
 
     // get the knowledge base options
-    static kbOptions() {
+    kbOptions() {
         let str = "";
-        for (const index in settings.kbList) {
-            const item = settings.kbList[index];
-            str += "<option value='" + index + "'>" + item.name + "</option>";
+        for (const kb of this.kb_list) {
+            str += "<option value='" + kb.id + "'>" + kb.name + "</option>";
         }
         return str;
     }
+
+    // get the source options
+    sourceOptions() {
+        let str = "<option value=''>any</option>";
+        if (this.kb !== null && this.kb.sourceList) {
+            for (const source of this.kb.sourceList) {
+                str += "<option value='" + source.id + "'>" + source.name + "</option>";
+            }
+        }
+        return str;
+    }
+
+    set_kb(id) {
+        this.kb = null;
+        if (id) {
+            for (const kb of this.kb_list) {
+                if (kb.id === id) {
+                    this.kb = kb;
+                    break;
+                }
+            }
+        }
+    }
+
+    set_source(id) {
+        this.source = null;
+        if (id && this.kb && this.kb.sourceList) {
+            for (const source of this.kb.sourceList) {
+                if (source.id === id) {
+                    this.source = source;
+                    break;
+                }
+            }
+        }
+    }
+
+    showDetails(url_id, url) {
+        const organisation_id = this.settings.organisationId;
+        const kb_id = this.kb.id;
+        const base_url = this.settings.base_url;
+        const document = this.semantic_search_result_map[url];
+        this.details_html = render_details(base_url, organisation_id, kb_id, url_id, document);
+        this.show_details = true;
+        this.refresh();
+    }
+
+    closeDetails() {
+        this.details_html = '';
+        this.show_details = false;
+        this.refresh();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // static helpers
 
     // create a random guid
     static guid() {
