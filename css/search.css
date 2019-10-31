@@ -335,6 +335,10 @@ a:active {
 	min-width: 1024px;
 }
 
+.search-container-summary {
+	width: 550px;
+}
+
 .search-left-right {
 	width: 80px;
 	display: inline-block;
@@ -562,20 +566,26 @@ a:active {
 
 .details-preview-image-box {
 	float: left;
+	padding: 10px;
 	margin-top: 30px;
 	margin-right: 10px;
 	margin-left: 40px;
-	width: 512px;
+	height: 70vh;
 }
 
 .details-preview-image {
-	width: 512px;
+	height: 70vh;
 }
 
 .details-item {
 	clear: both;
 	margin-left: 10px;
-	margin-bottom: 50px;
+	margin-bottom: 30px;
+	padding: 5px;
+}
+
+.details-item-text {
+	margin-left: 10px;
 	padding: 5px;
 }
 
@@ -593,6 +603,14 @@ a:active {
 	color: #333;
 	font-size: 1.0em;
 	font-weight: 500;
+}
+
+.details-label-text-url {
+	float: left;
+	color: #333;
+	font-size: 1.0em;
+	font-weight: 500;
+	cursor: pointer;
 }
 
 .details-close-container {
@@ -617,6 +635,14 @@ a:active {
 	margin-right: 4px;
 }
 
+.view-type-selected {
+	float: left;
+	margin-right: 4px;
+	border-bottom-color: black;
+	border-bottom-style: solid;
+	border-bottom-width: 2px;
+}
+
 .view-image-1 {
 	margin-top: 2px;
 	width: 20px;
@@ -624,5 +650,36 @@ a:active {
 
 .view-image-2 {
 	width: 24px;
+}
+
+
+/***** error message box ******/
+
+.error-dialog {
+	position: absolute;
+	padding: 20px;
+	bottom: 0;
+	background-color: #f44336; /* Red */
+	border-radius: 5px;
+	color: white;
+	width: 80%;
+	margin-bottom: 15px;
+}
+
+/* The close button */
+.close-button {
+	margin-left: 15px;
+	color: white;
+	font-weight: bold;
+	float: right;
+	font-size: 22px;
+	line-height: 20px;
+	cursor: pointer;
+	transition: 0.3s;
+}
+
+/* When moving the mouse over the close button */
+.close-button:hover {
+	color: black;
 }
 

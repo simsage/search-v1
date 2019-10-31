@@ -12,11 +12,16 @@
 </head>
 <body class="body-style">
 
+	<div id="dlgError" class="error-dialog" style="display: none;">
+		<span class="close-button" onclick="this.parentElement.style.display='none';">&times;</span>
+		<div id="txtError"></div>
+	</div>
+
 	<div class="view-type-container">
-		<div class="view-type" title="text view" onclick="search.text_view()">
+		<div id="imgLines" class="view-type" title="text view" onclick="search.text_view()">
 			<img src="images/text-lines.svg" class="view-image-1" alt="text view" onclick="search.text_view()" />
 		</div>
-		<div class="view-type" title="image view" onclick="search.image_view()">
+		<div id="imgPictures" class="view-type" title="image view" onclick="search.image_view()">
 			<img src="images/view.svg" class="view-image-2" alt="image view" onclick="search.image_view()" />
 		</div>
 	</div>
@@ -111,13 +116,19 @@
 	const advanced_search = $("#advancedSearch");
 	const poweredBy = $("#poweredBy");
 	const advanced_search_button = $("#advancedSearchButton");
+	const img_lines = $("#imgLines");
+	const img_pictures = $("#imgPictures");
+	const error_dialog = $("#dlgError");
+	const error_text = $("#txtError");
 
 	search_ctrl.focus();
 
 	function update_ui(search) {
         if (search.error.length > 0) {
-            alert(search.error);
+        	error_text.html(search.error);
+            error_dialog.show();
         } else {
+			error_dialog.hide();
         	const html = search.get_semantic_search_html();
             results.html(html);
         }
@@ -133,13 +144,6 @@
         dd_source.html(search.sourceOptions());
         if (search.source && search.source.id) {
             dd_source.val(search.source.id);
-        }
-        if (search.busy) {
-            search_ctrl.attr("disabled", "true");
-            btn_search.attr("disabled", "true");
-        } else {
-            search_ctrl.removeAttr("disabled");
-            btn_search.removeAttr("disabled");
         }
         if (search.show_details) {
 			details.html(search.details_html);
@@ -159,7 +163,26 @@
 			advanced_search_button.removeClass("select-style-has-selection");
 			advanced_search_button.addClass("select-style");
 		}
-		search_ctrl.focus();
+        // highlight selected view - text or images
+		if (search.view === 'lines') {
+			img_lines.removeClass("view-type");
+			img_lines.addClass("view-type-selected");
+			img_pictures.addClass("view-type");
+			img_pictures.removeClass("view-type-selected");
+		} else {
+			img_lines.addClass("view-type");
+			img_lines.removeClass("view-type-selected");
+			img_pictures.addClass("view-type-selected");
+			img_pictures.removeClass("view-type");
+		}
+		if (search.busy || !search.kb) {
+			search_ctrl.attr("disabled", "true");
+			btn_search.attr("disabled", "true");
+		} else {
+			search_ctrl.removeAttr("disabled");
+			btn_search.removeAttr("disabled");
+			search_ctrl.focus();
+		}
 	}
 
 	const search = new SemanticSearch(settings, update_ui, search_ctrl);
@@ -173,13 +196,17 @@
 
     // do a semantic search
     function search_click() {
-        const search_text = search_ctrl.val();
-		search.reset_pagination();
-		search.do_semantic_search(search_text);
+    	if (search.kb) {
+			const search_text = search_ctrl.val();
+			search.reset_pagination();
+			search.do_semantic_search(search_text);
+		}
     }
 
     function advanced_search_click() {
-    	search.toggle_advanced_search();
+    	if (search.kb) {
+			search.toggle_advanced_search();
+		}
     }
 
 	function advanced_search_clear_click() {

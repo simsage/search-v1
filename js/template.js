@@ -200,7 +200,7 @@ function render_semantics(semantic_set) {
 }
 
 /* render an advanced view for a document */
-function render_details(system_url, organisation_id, kb_id, url_id, document) {
+function render_details(system_url, organisation_id, kb_id, url_id, document, text, query) {
     const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + url_id + '/0';
     let result_str = '\
                                 <div class="details-title">Details\
@@ -209,7 +209,7 @@ function render_details(system_url, organisation_id, kb_id, url_id, document) {
                                   <div class="details-text">\
                                     <div class="details-item">\
                                       <div class="details-label">url</div>\
-                                      <div class="details-label-text">{url}</div>\
+                                      <div class="details-label-text-url" title="{url}" onclick="window.open({url_str},{blank})">{display_url}</div>\
                                     </div>\
                                     <div class="details-item">\
                                       <div class="details-label">title</div>\
@@ -251,6 +251,13 @@ function render_details(system_url, organisation_id, kb_id, url_id, document) {
                                       <div class="details-label">word count</div>\
                                       <div class="details-label-text">{num_words}</div>\
                                     </div>\
+                                    <div class="details-item">\
+                                      <div class="details-label">search query</div>\
+                                      <div class="details-label-text">{query}</div>\
+                                    </div>\
+                                    <div class="details-item-text">\
+                                        <div class="search-container-summary">{text}</div>\
+                                    </div>\
                                   </div>\
                                   <div class="details-preview-image-box">\
                                     <img src="{image_url}" alt="page preview" class="details-preview-image" title="page preview" />\
@@ -260,8 +267,12 @@ function render_details(system_url, organisation_id, kb_id, url_id, document) {
     ';
     return result_str
         .replace(/{title}/g, adjust_size(document.title, 50))
+        .replace(/{text}/g, text)
+        .replace(/{query}/g, query)
         .replace(/{author}/g, adjust_size(document.author, 50))
-        .replace(/{url}/g, adjust_size(document.url, 50))
+        .replace(/{display_url}/g, adjust_size(document.url, 50))
+        .replace(/{url_str}/g, "'" + document.url + "'")
+        .replace(/{blank}/g, "'_blank'")
         .replace(/{document_type}/g, document.documentType)
         .replace(/{document_size}/g, size_to_str(document.binarySize))
         .replace(/{num_sentences}/g, document.numSentences)

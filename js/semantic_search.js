@@ -27,6 +27,7 @@ class SemanticSearch {
 
         // error message
         this.error = '';
+        this.connection_retry_count = 1;
 
         this.fileType = [];
         this.title = [];
@@ -47,6 +48,7 @@ class SemanticSearch {
         this.has_advanced_selection = false;
         this.show_advanced_search = false;
         this.view = 'lines';
+        this.search_query = '';
     }
 
     text_view() {
@@ -82,6 +84,8 @@ class SemanticSearch {
                 if (self.kb_list.length > 0) {
                     self.kb = self.kb_list[0];
                 }
+                self.error = "";
+                self.connection_retry_count = 1;
                 self.busy = false;
                 self.refresh();
             }
@@ -89,7 +93,13 @@ class SemanticSearch {
         })
         .fail(function (err) {
             console.error(JSON.stringify(err));
-            self.error = err;
+            if (err && err["readyState"] === 0 && err["status"] === 0) {
+                self.error = "Server not responding, not connected.  Trying again in 5 seconds...  [try " + self.connection_retry_count + "]";
+                self.connection_retry_count += 1;
+                window.setTimeout(() => self.getSemanticSearchInfo(), 5000);
+            } else {
+                self.error = err;
+            }
             self.busy = false;
             self.refresh();
         });
@@ -163,6 +173,7 @@ class SemanticSearch {
     do_semantic_search(text) {
         let query = "(";
         let needsAnd = false;
+        this.search_query = text;
         if (text.length > 0) {
             query += "body: " + text;
             needsAnd = true;
@@ -459,11 +470,13 @@ class SemanticSearch {
     }
 
     showDetails(url_id, url) {
+        const num_results = this.semantic_search_results.length;
         const organisation_id = this.settings.organisationId;
         const kb_id = this.kb.id;
         const base_url = this.settings.base_url;
         const document = this.semantic_search_result_map[url];
-        this.details_html = render_details(base_url, organisation_id, kb_id, url_id, document);
+        const text = SemanticSearch.highlight(document.textList[document.index]);
+        this.details_html = render_details(base_url, organisation_id, kb_id, url_id, document, text, this.search_query);
         this.show_details = true;
         this.refresh();
     }
