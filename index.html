@@ -3,20 +3,23 @@
 	<title>SimSage Search</title>
 
 	<script src="js/jquery-3.4.1.min.js"></script>
+	<script src="js/sockjs.js"></script>
+	<script src="js/stomp.js"></script>
+
 	<script src="js/template.js"></script>
 	<script src="settings.js"></script>
-	<script src="search_settings.js"></script>
+	<script src="ui_settings.js"></script>
 	<script src="js/semantic_search.js"></script>
+	<script src="js/bot.js"></script>
 
+	<link rel="stylesheet" type="text/css" href="css/material-icons.css" />
 	<link rel="stylesheet" type="text/css" href="css/search.css">
 </head>
+
 <body class="body-style">
 
-	<div id="dlgError" class="error-dialog" style="display: none;">
-		<span class="close-button" onclick="this.parentElement.style.display='none';">&times;</span>
-		<div id="txtError"></div>
-	</div>
 
+	<!-- top right icons -->
 	<div class="view-type-container">
 		<div id="imgLines" class="view-type" title="text view" onclick="search.text_view()">
 			<img src="images/text-lines.svg" class="view-image-1" alt="text view" onclick="search.text_view()" />
@@ -24,8 +27,13 @@
 		<div id="imgPictures" class="view-type" title="image view" onclick="search.image_view()">
 			<img src="images/view.svg" class="view-image-2" alt="image view" onclick="search.image_view()" />
 		</div>
+        <div id="imgSignIn" class="sign-in-view-type" title="sign-in" onclick="search.show_sign_in()">
+            <img id="btnSignIn" src="images/signin.svg" class="view-image-2" alt="sign-in" />
+        </div>
 	</div>
 
+
+	<!-- filter button, search bar, and search button -->
 	<div class="centered-page">
 		<div class="search-control">
 			<div class="advanced-search" title="advanced search" onclick="advanced_search_click()">
@@ -45,6 +53,7 @@
 	</div>
 
 
+	<!-- advanced search button and menu -->
 	<div class="centered-page">
 		<div id="advancedSearch" class="metadata-area" style="display: none;">
 			<div class="floaty">
@@ -88,173 +97,66 @@
 		</div>
 	</div>
 
+
+
 	<br />
 	<br />
 
 
+	<!-- advanced search button and menu -->
+	<div id="botResults" class="bot-centered-page">
+		<div class="bot-chats no-select" id="chat" ondblclick="bot.min_max_bot_window_click()">
+		</div>
+		<div id="btnBotMaxMin" class="bot-close-button" title="minimize this bot window" onclick="bot.min_max_bot_window_click()">
+			<img src="images/chevrons.svg" class="bot-close-image" alt="close" />
+		</div>
+		<div style="clear: both"></div>
+	</div>
+
+
+	<!-- semantic search results container -->
 	<div id="results" class="centered-page">
 	</div>
 
-	<!-- details page -->
+
+	<!-- semantic search details page -->
 	<div id="divDetails" class="details-page" style="display: none;">
 	</div>
 
+
+	<!-- sign-in dialog -->
+	<div class="form-popup">
+		<h1 class="title">sign-in</h1>
+		<div id="divEmail">
+			<label for="txtEmail"><b>Email</b></label>
+			<input id="txtEmail" class="txtEmail" type="text" title="your email address" placeholder="Enter Email" name="email" required>
+		</div>
+		<div id="divPassword">
+			<label for="txtPassword"><b>Password</b></label>
+			<input id="txtPassword" class="txtPassword" title="your SimSage password" type="password" placeholder="Enter Password" name="psw" required>
+		</div>
+		<div class="divButtons">
+			<button type="submit" class="btn" title="click this button to sign-in after typing in your email and password.">Sign-in</button>
+			<button type="submit" class="btn cancel" title="close the sign-in dialog box." onclick="search.close_sign_in()">Cancel</button>
+		</div>
+	</div>
+
+
+	<!-- powered by logo -->
 	<div class="powered-by" id="poweredBy">
 		<img src="images/powered-by-simsage.svg" alt="powered by" title="powered by SimSage" />
 	</div>
 
+
+	<!-- error message display bar -->
+	<div id="dlgError" class="error-dialog" style="display: none;">
+		<span class="close-button" onclick="this.parentElement.style.display='none';">&times;</span>
+		<div id="txtError"></div>
+	</div>
+
+
+	<script src="js/setup.js"></script>
+
 </body>
-
-<script lang="javascript">
-
-	const search_ctrl = $("#txtSearch");
-	const dd_kb = $("#ddKnowledgeBase");
-	const dd_source = $("#ddSource");
-	const btn_search = $("#btnSearch");
-	const results = $("#results");
-	const details = $("#divDetails");
-	const advanced_search = $("#advancedSearch");
-	const poweredBy = $("#poweredBy");
-	const advanced_search_button = $("#advancedSearchButton");
-	const img_lines = $("#imgLines");
-	const img_pictures = $("#imgPictures");
-	const error_dialog = $("#dlgError");
-	const error_text = $("#txtError");
-
-	search_ctrl.focus();
-
-	function update_ui(search) {
-        if (search.error.length > 0) {
-        	error_text.html(search.error);
-            error_dialog.show();
-        } else {
-			error_dialog.hide();
-        	const html = search.get_semantic_search_html();
-            results.html(html);
-        }
-        if (this.semantic_search_results.length > 0) {
-			poweredBy.hide();
-		} else {
-			poweredBy.show();
-		}
-        dd_kb.html(search.kbOptions());
-        if (search.kb && search.kb.id) {
-            dd_kb.val(search.kb.id);
-        }
-        dd_source.html(search.sourceOptions());
-        if (search.source && search.source.id) {
-            dd_source.val(search.source.id);
-        }
-        if (search.show_details) {
-			details.html(search.details_html);
-			details.show();
-		} else {
-			details.hide();
-		}
-        if (search.show_advanced_search) {
-			advanced_search.show();
-		} else {
-			advanced_search.hide();
-		}
-        if (search.has_advanced_selection) {
-			advanced_search_button.removeClass("select-style");
-			advanced_search_button.addClass("select-style-has-selection");
-		} else {
-			advanced_search_button.removeClass("select-style-has-selection");
-			advanced_search_button.addClass("select-style");
-		}
-        // highlight selected view - text or images
-		if (search.view === 'lines') {
-			img_lines.removeClass("view-type");
-			img_lines.addClass("view-type-selected");
-			img_pictures.addClass("view-type");
-			img_pictures.removeClass("view-type-selected");
-		} else {
-			img_lines.addClass("view-type");
-			img_lines.removeClass("view-type-selected");
-			img_pictures.addClass("view-type-selected");
-			img_pictures.removeClass("view-type");
-		}
-		if (search.busy || !search.kb) {
-			search_ctrl.attr("disabled", "true");
-			btn_search.attr("disabled", "true");
-		} else {
-			search_ctrl.removeAttr("disabled");
-			btn_search.removeAttr("disabled");
-			search_ctrl.focus();
-		}
-	}
-
-	const search = new SemanticSearch(settings, update_ui, search_ctrl);
-
-	    // semantic search enter key check
-    function search_enter(event) {
-        if (event.keyCode === 13) {
-            search_click();
-        }
-    }
-
-    // do a semantic search
-    function search_click() {
-    	if (search.kb) {
-			const search_text = search_ctrl.val();
-			search.reset_pagination();
-			search.do_semantic_search(search_text);
-		}
-    }
-
-    function advanced_search_click() {
-    	if (search.kb) {
-			search.toggle_advanced_search();
-		}
-    }
-
-	function advanced_search_clear_click() {
-		$("#txtTypeFilter").val("");
-		$("#txtTitle").val("");
-		$("#txtUrl").val("");
-		$("#txtAuthor").val("");
-		$("#ddSource").val("");
-		change_advanced_search();
-	}
-
-	function change_advanced_search() {
-		search.fileType = [];
-		search.kb = null;
-		search.source = null;
-		search.url = [];
-		search.title = [];
-		search.author = [];
-		search.source = '';
-		search.has_advanced_selection = false;
-
-		const titleFilter = $("#txtTitle").val();
-		const urlFilter = $("#txtUrl").val();
-		const authorFilter = $("#txtAuthor").val();
-		const typeFilter = $("#txtTypeFilter").val();
-		const kb = search.set_kb($("#ddKnowledgeBase").val());
-		const source = search.set_source($("#ddSource").val());
-		if (typeFilter.length > 0 || urlFilter.length > 0 || authorFilter.length > 0 || titleFilter.length > 0) {
-			search.has_advanced_selection = true;
-			$(".advanced-search-tick").css("display", "inline-block");
-			if (typeFilter.length > 0)
-				search.fileType = typeFilter.split(",");
-			if (urlFilter.length > 0)
-				search.url = urlFilter.split(",");
-			if (titleFilter.length > 0)
-				search.title = titleFilter.split(",");
-			if (authorFilter.length > 0)
-				search.author = authorFilter.split(",");
-		} else {
-			$(".advanced-search-tick").css("display", "none");
-		}
-	}
-
-	// load initial document settings from server
-    $( document ).ready(function() {
-        search.getSemanticSearchInfo();
-    });
-
-</script>
 
 </html>

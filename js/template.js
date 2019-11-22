@@ -283,3 +283,66 @@ function render_details(system_url, organisation_id, kb_id, url_id, document, te
         .replace(/{created}/g, unix_time_to_str(document.created))
         .replace(/{image_url}/g, image_url);
 }
+
+
+/************* bot specific render items ****************/
+
+function linksToHtml(urlList) {
+    let linkStr = "";
+    if (urlList) {
+        for (const url of urlList) {
+            linkStr += "<div class='link'><a href='" + url + "' target='_blank'>" + url + "</a></div>";
+        }
+    }
+    if (linkStr.length > 0) {
+        linkStr = "<br/><div class='link-box'>" + linkStr + "</div>";
+    }
+    return linkStr;
+}
+
+function userMessageWrapper(text, urlList) {
+    return "<div class=\"chatbox_body_message chatbox_body_message-right\">\n" +
+        "<div class=\"bot-human\" title=\"you said\"></div>\n" +
+        "<div class=\"bot-message\">" + text + linksToHtml(urlList) + "</div>\n" +
+        "</div>\n"
+}
+
+function simSageMessageWrapper(text, urlList) {
+    return "<div class=\"chatbox_body_message chatbox_body_message-left\">\n" +
+        "<div class=\"bot-machine\" title=\"SimSage said\"></div>\n" +
+        "<div class=\"bot-message\">" + text + linksToHtml(urlList) + "</div>\n" +
+        "</div>\n"
+}
+
+function systemBusyMessage() {
+    return  "<div class=\"busy-image-container\"><img class=\"busy-image\" src=\"images/dots.gif\" alt=\"please wait\"></div>\n";
+}
+
+function systemGetUserEmail() {
+    return  "<div class=\"email-ask\">" +
+        ui_settings.bot_email_message + "\n" +
+        "<input class='email-address' id='email' onkeypress='bot.sendEmailKey(event)' type='text' placeholder='Email Address' />" +
+        "<div class='send-email-button' onclick='bot.sendEmail()' title='send email'></div></div>"
+}
+
+// convert the message list of a series of html items
+function botMessageListToHtmlHelper(message_list, error, operatorTyping, askForEmailAddress) {
+    let result = "<div style='padding: 10px;'><div/>";
+    let lastMessageUser = false;
+    message_list.map((item) => {
+        if (item.text && item.origin === "simsage") {
+            result += simSageMessageWrapper(item.text, item.urlList);
+            lastMessageUser = false;
+        } else if (item.text) {
+            result += userMessageWrapper(item.text, item.urlList);
+            lastMessageUser = true;
+        }
+    });
+    if (lastMessageUser && error === '' && operatorTyping) {
+        result += systemBusyMessage();
+    }
+    if (askForEmailAddress) {
+        result += systemGetUserEmail();
+    }
+    return result;
+}

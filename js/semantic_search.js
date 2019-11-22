@@ -49,6 +49,11 @@ class SemanticSearch {
         this.show_advanced_search = false;
         this.view = 'lines';
         this.search_query = '';
+
+        // sign-in details
+        this.show_signin = false;
+        this.email = '';
+        this.session_id = '';
     }
 
     text_view() {
@@ -58,6 +63,23 @@ class SemanticSearch {
 
     image_view() {
         this.view = 'images';
+        this.refresh();
+    }
+
+    // sign-in or out
+    show_sign_in() {
+        if (this.session_id === '') {
+            this.show_signin = true;
+        } else {
+            // do a sign-out
+            this.show_signin = false;
+            this.session_id = '';
+        }
+        this.refresh();
+    }
+
+    close_sign_in() {
+        this.show_signin = false;
         this.refresh();
     }
 
@@ -253,13 +275,13 @@ class SemanticSearch {
             'botQuery': text,
             'superSearch': query,
             'page': this.page,
-            'pageSize': search_settings.page_size,
-            'fragmentCount': search_settings.fragment_count,
-            'maxWordDistance': search_settings.max_word_distance,
+            'pageSize': ui_settings.page_size,
+            'fragmentCount': ui_settings.fragment_count,
+            'maxWordDistance': ui_settings.max_word_distance,
             'shardSizeList': this.shard_size_list,
-            'scoreThreshold': search_settings.score_threshold,
-            'askBot': search_settings.ask_bot,
-            'botThreshold': search_settings.bot_threshold,
+            'scoreThreshold': ui_settings.score_threshold,
+            'askBot': false,  // we've got the bot now built in
+            'botThreshold': 1.0,
         };
 
         const self = this;
@@ -302,7 +324,7 @@ class SemanticSearch {
                     });
                     self.busy = false;
                     self.num_results = data.totalDocumentCount;
-                    const divided = data.totalDocumentCount / search_settings.page_size;
+                    const divided = data.totalDocumentCount / ui_settings.page_size;
                     self.num_pages = parseInt(divided);
                     if (parseInt(divided) < divided) {
                         self.num_pages += 1;
