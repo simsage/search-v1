@@ -1,10 +1,12 @@
 const search_ctrl = $("#txtSearch");
+const no_results = $("#no-results");
 const dd_kb = $("#ddKnowledgeBase");
 const dd_source = $("#ddSource");
 const btn_search = $("#btnSearch");
 const results = $("#results");
-const bot_results = $("#botResults");
-const bot_chat = $("#chat");
+const bot_display = $("#divBotBubble");
+const bot_text = $("#divSpeechBubble");
+const bot_url = $("#botUrl");
 const details = $("#divDetails");
 const advanced_search = $("#advancedSearch");
 const poweredBy = $("#poweredBy");
@@ -16,9 +18,12 @@ const error_text = $("#txtError");
 const btn_sign_in = $("#btnSignIn");
 const txt_email = $("#txtEmail");
 const sign_in_section = $("#imgSignIn");
-const bot_max_min = $("#btnBotMaxMin");
 
+// focus on the search field
 search_ctrl.focus();
+
+// escape do a few things
+document.addEventListener('keydown', checkEscape);
 
 // sign in visible?
 if (ui_settings.show_sign_in) {
@@ -30,57 +35,36 @@ if (ui_settings.show_advanced_filter) {
     advanced_search_button.show();
 }
 
-function update_bot_ui(bot) {
-    if (bot && bot.search.error.length === 0) {
-        if (ui_settings.bot_enabled && bot.has_simsage_answer()) {
-            bot_results.show();
-
-            const html = bot.bot_message_list_to_html();
-
-            if (this.window_maximized) {
-                if (bot_chat.hasClass("bot-chats-minimized")) {
-                    bot_chat.html(html);
-                    bot_chat.removeClass("bot-chats-minimized");
-                    bot_chat.addClass("bot-chats");
-                    bot_max_min.attr("title", "minimize this bot window");
-                }
-            } else {
-                if (bot_chat.hasClass("bot-chats")) {
-                    bot_chat.removeClass("bot-chats");
-                    bot_chat.addClass("bot-chats-minimized");
-                    bot_max_min.attr("title", "maximize this bot window");
-
-                    // carefully timed with css effects (~ 60% less in time)
-                    setTimeout(() => {
-                        bot_chat.html("");
-                    }, 300);
-                }
-            }
-
-            if (this.window_maximized) {
-                bot_chat.html(html);
-            }
-
-            // scroll to the bottom
-            setTimeout(() => {
-                let element = document.getElementById('chat');
-                if (element) {
-                    element.scrollTop = element.scrollHeight;
-                }
-            }, 100);
-        }
-    }
+// floating dialog for the bot?
+if (ui_settings.bot_floating_dialog) {
+    bot_display.removeClass("bubble-speech-container");
+    bot_display.addClass("bubble-speech-container-floating");
 }
 
 function update_ui(search) {
+    const busy = search.busy;
     if (search.error.length > 0) {
         error_text.html(search.error);
         error_dialog.show();
     } else {
         error_dialog.hide();
-        const html = search.get_semantic_search_html();
-        results.html(html);
+        if (!busy) {
+            const html = search.get_semantic_search_html();
+            results.html(html);
+        }
     }
+
+    if (!search.is_connected || busy) {
+        search_ctrl.attr('disabled', 'true');
+        btn_search.attr('disabled', 'true');
+    } else {
+        if (search_ctrl.attr('disabled')) {
+            search_ctrl.removeAttr('disabled');
+            btn_search.removeAttr('disabled');
+            search_ctrl.focus();
+        }
+    }
+
     if (search.semantic_search_results.length > 0) {
         poweredBy.hide();
     } else {
@@ -91,68 +75,98 @@ function update_ui(search) {
         dd_kb.val(search.kb.id);
     }
     dd_source.html(search.sourceOptions());
-    if (search.source && search.source.id) {
-        dd_source.val(search.source.id);
+    if (search.source && search.source.sourceId) {
+        dd_source.val(search.source.sourceId);
     }
-    if (search.show_details) {
-        details.html(search.details_html);
-        details.show();
-    } else {
-        details.hide();
-    }
-    if (search.show_advanced_search) {
-        advanced_search.show();
-    } else {
-        advanced_search.hide();
-    }
-    if (search.has_advanced_selection) {
-        advanced_search_button.removeClass("select-style");
-        advanced_search_button.addClass("select-style-has-selection");
-    } else {
-        advanced_search_button.removeClass("select-style-has-selection");
-        advanced_search_button.addClass("select-style");
-    }
-    // highlight selected view - text or images
-    if (search.view === 'lines') {
-        img_lines.removeClass("view-type");
-        img_lines.addClass("view-type-selected");
-        img_pictures.addClass("view-type");
-        img_pictures.removeClass("view-type-selected");
-    } else {
-        img_lines.addClass("view-type");
-        img_lines.removeClass("view-type-selected");
-        img_pictures.addClass("view-type-selected");
-        img_pictures.removeClass("view-type");
-    }
-    if (search.busy || !search.kb) {
-        search_ctrl.attr("disabled", "true");
-        btn_search.attr("disabled", "true");
-    } else {
-        search_ctrl.removeAttr("disabled");
-        btn_search.removeAttr("disabled");
-        search_ctrl.focus();
-    }
-    if (search.session_id === '') {
-        btn_sign_in.attr('src', 'images/signin.svg');
-    } else {
-        btn_sign_in.attr('src', 'images/signout.svg');
-    }
-    if (search.show_signin) {
-        $(".form-popup").show();
-        txt_email.focus();
-    } else {
-        $(".form-popup").hide();
+    if (!busy && search.is_connected) {
+        if (search.show_details) {
+            details.html(search.details_html);
+            details.show();
+        } else {
+            details.hide();
+        }
+        if (search.show_advanced_search) {
+            advanced_search.show();
+        } else {
+            advanced_search.hide();
+        }
+        if (search.has_advanced_selection) {
+            advanced_search_button.removeClass("select-style");
+            advanced_search_button.addClass("select-style-has-selection");
+        } else {
+            advanced_search_button.removeClass("select-style-has-selection");
+            advanced_search_button.addClass("select-style");
+        }
+        // highlight selected view - text or images
+        if (search.view === 'lines') {
+            img_lines.removeClass("view-type");
+            img_lines.addClass("view-type-selected");
+            img_pictures.addClass("view-type");
+            img_pictures.removeClass("view-type-selected");
+        } else {
+            img_lines.addClass("view-type");
+            img_lines.removeClass("view-type-selected");
+            img_pictures.addClass("view-type-selected");
+            img_pictures.removeClass("view-type");
+        }
+        if (search.busy || !search.kb) {
+            search_ctrl.attr("disabled", "true");
+            btn_search.attr("disabled", "true");
+        } else {
+            if (search_ctrl.attr('disabled') === 'true') {
+                search_ctrl.removeAttr("disabled");
+                btn_search.removeAttr("disabled");
+                search_ctrl.focus();
+            }
+        }
+        if (search.session_id === '') {
+            btn_sign_in.attr('src', 'images/signin.svg');
+        } else {
+            btn_sign_in.attr('src', 'images/signout.svg');
+        }
+        if (search.show_signin) {
+            $(".sign-in-form-popup").show();
+            txt_email.focus();
+        } else {
+            $(".sign-in-form-popup").hide();
+        }
+        // bot result?
+        if (search.bot_text && search.bot_text.length > 0 && search.bubble_visible) {
+            bot_display.show();
+            bot_text.html(search.bot_text);
+            bot_url.html(search.bot_url);
+            bot_url.attr("href", search.bot_url);
+        } else {
+            bot_display.hide();
+        }
+
+        // no results at all?
+        if (search.bot_text.length === 0 && search.semantic_search_results.length === 0 && search.search_query.length > 0) {
+            no_results.show();
+        } else {
+            no_results.hide();
+        }
+
     }
 }
 
-const search = new SemanticSearch(settings, update_ui, search_ctrl);
-
-// do we need a semantic bot?
-let bot = null;
-if (ui_settings.bot_enabled) {
-    bot = new Bot(settings, search, update_bot_ui);
-    bot.ws_connect(); // connect to server
+function hide_speech_bubble() {
+    search.hide_speech_bubble();
 }
+
+// check escape key
+function checkEscape(e) {
+    if (e.code === 'Escape') {
+        if (search.show_details) {
+            search.show_details = false;
+            details.hide();
+        } else if (search.bubble_visible) {
+            hide_speech_bubble();
+        }
+    }
+}
+
+const search = new SemanticSearch(update_ui);
 
 // semantic search enter key check
 function search_enter(event) {
@@ -163,13 +177,10 @@ function search_enter(event) {
 
 // do a semantic search
 function search_click() {
-    if (search.kb) {
+    if (search.kb && search.is_connected) {
         const search_text = search_ctrl.val();
         search.reset_pagination();
         search.do_semantic_search(search_text);
-        if (ui_settings.bot_enabled) {
-            bot.do_ask_bot(search_text);
-        }
     }
 }
 
@@ -208,11 +219,9 @@ function change_advanced_search() {
     }
 
     const source_id = dd_source.val();
-    if (source_id && source_id !== '') {
+    if (source_id) {
         search.set_source(source_id);
     }
-
-    console.log("change_advanced_search: 2");
 
     if (typeFilter.length > 0 || urlFilter.length > 0 || authorFilter.length > 0 || titleFilter.length > 0) {
         search.has_advanced_selection = true;
@@ -232,5 +241,5 @@ function change_advanced_search() {
 
 // load initial document settings from server
 $( document ).ready(function() {
-    search.getSemanticSearchInfo();
+    search.ws_connect(); // connect to SimSage
 });

@@ -2,15 +2,19 @@
 // Semantic Search helper class
 //
 
-class SemanticSearch {
+// ws-response message types
+const mt_Disconnect = "disconnect";
+const mt_Error = "error";
+const mt_Message = "message";
 
-    constructor(settings, update_ui, search_control) {
-        this.settings = settings;
+// semantic search class
+class SemanticSearch extends SimSageCommon {
+
+    constructor(update_ui) {
+        super();
         this.update_ui = update_ui;
-        this.search_control = search_control;
 
         // the current semantic search set
-        this.current_text = '';  // current search text
         this.semantic_search_results = [];
         this.semantic_search_result_map = {};
 
@@ -22,49 +26,169 @@ class SemanticSearch {
         this.prev_query = ''; // shard logic: what was asked previously
         this.shard_size_list = [];
 
-        // are we busy searching?
-        this.busy = false;
+        // bot details
+        this.bot_url = '';
+        this.bot_text = '';
+        this.bubble_visible = true; // is the bot visible?
 
-        // error message
-        this.error = '';
-        this.connection_retry_count = 1;
+        // semantic set (categories on the side from semantic search results)
+        this.semantic_set = {};
 
+        // details page
+        this.show_details = false;
+        this.details_html = '';
+
+        // selected view for semantic search
+        this.view = 'lines';
+
+        // advanced filter visibility
+        this.has_advanced_selection = false;
+        this.show_advanced_search = false;
+
+        // advanced filter settings
         this.fileType = [];
         this.title = [];
         this.url = [];
         this.author = [];
-        this.kb_list = [];
-        this.kb = null;
-        this.source = null;
+        this.source = null; // selected source
 
-        // semantic set
-        this.semantic_set = {};
-
-        // details view
-        this.show_details = false;
-        this.details_html = '';
-
-        // advanced search menu visibility
-        this.has_advanced_selection = false;
-        this.show_advanced_search = false;
-        this.view = 'lines';
+        // the user's current query
         this.search_query = '';
 
         // sign-in details
         this.show_signin = false;
-        this.email = '';
         this.session_id = '';
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // perform the semantic search
+    do_semantic_search(text) {
+        if (this.is_connected && this.kb) {
+
+            const search_query_str = this.semantic_search_query_str(text);
+            if (search_query_str !== '()') {
+                this.search_query = text;
+                this.show_advanced_search = false;
+                this.busy = true;
+                let source_id = '';
+                if (this.source !== null) {
+                    source_id = this.source.sourceId;
+                }
+
+                const clientQuery = {
+                    'organisationId': settings.organisationId,
+                    'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                    'clientId': SemanticSearch.getClientId(),
+                    'semanticSearch': true,     // always a search
+                    'query': search_query_str,  // search query
+                    'queryText': text,          // raw text
+                    'numResults': 1,              // bot results
+                    'scoreThreshold': ui_settings.bot_threshold,
+                    'page': this.page,
+                    'pageSize': ui_settings.page_size,
+                    'shardSizeList': this.shard_size_list,
+                    'fragmentCount': ui_settings.fragment_count,
+                    'maxWordDistance': ui_settings.max_word_distance,
+                    'searchThreshold': ui_settings.score_threshold,
+                    'sourceId': source_id,
+                };
+
+                // construct a client query (OpsModels.ClientQuery)
+                this.send_message("/ws/ops/query", clientQuery);
+                this.refresh();
+            } else {
+                this.error = "Please enter a query to start searching.";
+                this.refresh();
+            }
+        }
+    }
+
+    // overwrite: call refresh ui
+    refresh() {
+        if (this.update_ui) {
+            this.update_ui(this);
+        }
+    }
+
+    // overwrite: generic web socket receiver
+    receive_ws_data(data) {
+        this.busy = false;
+        if (data) {
+            if (data.messageType === mt_Error && data.error.length > 0) {
+                this.error = data.error;  // set an error
+                this.refresh();
+
+            } else if (data.messageType === mt_Disconnect) {
+                this.refresh();
+
+            } else if (data.messageType === mt_Message) {
+
+                const self = this;
+                this.bot_url = '';
+                this.bot_text = '';
+                this.semantic_search_results = [];
+                this.semantic_search_result_map = {};
+                this.semantic_set = {};
+
+                // did we get semantic search results?
+                if (data.resultList) {
+
+                    this.shard_size_list = data.shardSizeList;
+                    this.semantic_set = data.semanticSet;
+                    data.resultList.map(function (sr) {
+
+                        if (!sr.botResult) {
+                            // enhance search result for display
+                            sr['index'] = 0;  // inner offset index
+                            sr['num_results'] = sr.textList.length;
+                            self.semantic_search_results.push(sr);  // add item
+                            self.semantic_search_result_map[sr.url] = sr;
+                        }
+
+                    });
+                    this.busy = false;
+                    this.num_results = data.totalDocumentCount;
+                    const divided = data.totalDocumentCount / ui_settings.page_size;
+                    self.num_pages = parseInt(divided);
+                    if (parseInt(divided) < divided) {
+                        self.num_pages += 1;
+                    }
+                }
+
+                // bot result?
+                if (data.hasResult && data.text && data.text.length > 0) {
+                    this.bot_text = data.text;
+                    if (data.urlList && data.urlList.length > 0) {
+                        this.bot_url = data.urlList[0];
+                    }
+                }
+
+                // no results found
+                if (!data.hasResult) {
+                }
+
+                this.refresh();
+            }
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // switch to text view in search ui
     text_view() {
         this.view = 'lines';
         this.refresh();
     }
 
+    // switch to image view in search ui
     image_view() {
         this.view = 'images';
         this.refresh();
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // sign in system
 
     // sign-in or out
     show_sign_in() {
@@ -83,55 +207,15 @@ class SemanticSearch {
         this.refresh();
     }
 
-    // load the initial information needed for semantic search from the server
-    getSemanticSearchInfo() {
-        const self = this;
-        const url = this.settings.base_url + '/knowledgebase/search/info/' + encodeURIComponent(this.settings.organisationId);
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // bot display
 
-        this.error = '';
-        this.busy = true;
-
-        this.refresh(); // notify ui
-
-        jQuery.ajax({
-            headers: {
-                'Content-Type': 'application/json',
-                'API-Version': this.settings.api_version,
-            },
-            'type': 'GET',
-            'url': url,
-            'dataType': 'json',
-            'success': function (data) {
-                self.kb_list = data.kbList;
-                if (self.kb_list.length > 0) {
-                    self.kb = self.kb_list[0];
-                }
-                self.error = "";
-                self.connection_retry_count = 1;
-                self.busy = false;
-                self.refresh();
-            }
-
-        })
-        .fail(function (err) {
-            console.error(JSON.stringify(err));
-            if (err && err["readyState"] === 0 && err["status"] === 0) {
-                self.error = "Server not responding, not connected.  Trying again in 5 seconds...  [try " + self.connection_retry_count + "]";
-                self.connection_retry_count += 1;
-                window.setTimeout(() => self.getSemanticSearchInfo(), 5000);
-            } else {
-                self.error = err;
-            }
-            self.busy = false;
-            self.refresh();
-        });
+    // hide the bot response
+    hide_speech_bubble() {
+        this.bubble_visible = false;
+        this.refresh();
     }
 
-    refresh() {
-        if (this.update_ui) {
-            this.update_ui(this);
-        }
-    }
 
     // visit the previous text snippet of a single search result
     doInnerPrev(url) {
@@ -160,7 +244,7 @@ class SemanticSearch {
     prevPage() {
         if (this.page > 0) {
             this.page -= 1;
-            this.do_semantic_search(this.current_text);
+            this.do_semantic_search(this.search_query);
         }
     }
 
@@ -168,34 +252,27 @@ class SemanticSearch {
     nextPage() {
         if ((this.page + 1) < this.num_pages) {
             this.page += 1;
-            this.do_semantic_search(this.current_text);
+            this.do_semantic_search(this.search_query);
         }
     }
 
     // reset the variables used in determining pagination if the query has changed
     reset_pagination() {
-        if (this.current_text !== this.prev_query) {
-            this.prev_query = this.current_text;
+        if (this.search_query !== this.prev_query) {
+            this.prev_query = this.search_query;
             this.page = 0;  // reset to page 0
             this.shard_size_list = [];
         }
+        this.bot_url = '';
+        this.bot_text = '';
+        this.bubble_visible = true;
+        this.semantic_search_results = [];
     }
 
-    toggle_advanced_search() {
-        this.show_advanced_search = !this.show_advanced_search;
-        this.refresh();
-    }
-
-    hide_advanced_search() {
-        this.show_advanced_search = false;
-        this.refresh();
-    }
-
-    // perform a semantic search
-    do_semantic_search(text) {
+    // get a semantic search query string for all the filters etc.
+    semantic_search_query_str(text) {
         let query = "(";
         let needsAnd = false;
-        this.search_query = text;
         if (text.length > 0) {
             query += "body: " + text;
             needsAnd = true;
@@ -208,7 +285,7 @@ class SemanticSearch {
             needsAnd = true;
             for (const i in this.url) {
                 if (i > 0) {
-                    query += " or "
+                    query += " and "
                 }
                 query += "url: " + this.url[i];
             }
@@ -222,7 +299,7 @@ class SemanticSearch {
             needsAnd = true;
             for (const i in this.title) {
                 if (i > 0) {
-                    query += " or "
+                    query += " and "
                 }
                 query += "title: " + this.title[i];
             }
@@ -236,7 +313,7 @@ class SemanticSearch {
             needsAnd = true;
             for (const i in this.author) {
                 if (i > 0) {
-                    query += " or "
+                    query += " and "
                 }
                 query += "author: " + this.author[i];
             }
@@ -257,100 +334,15 @@ class SemanticSearch {
             query += ") "
         }
         query += ")";
-        if (query.length <= 2) {
-            alert('please enter a search query');
-            return;
-        }
-
-        this.show_advanced_search = false;
-        let source_id = '';
-        if (this.source !== null) {
-            source_id = this.source.id;
-        }
-
-        let searchObj = {
-            'organisationId': this.settings.organisationId,
-            'kbList': [{"kbId": this.kb.id, "sid": this.kb.sid}],
-            'source': source_id,
-            'botQuery': text,
-            'superSearch': query,
-            'page': this.page,
-            'pageSize': ui_settings.page_size,
-            'fragmentCount': ui_settings.fragment_count,
-            'maxWordDistance': ui_settings.max_word_distance,
-            'shardSizeList': this.shard_size_list,
-            'scoreThreshold': ui_settings.score_threshold,
-            'askBot': false,  // we've got the bot now built in
-            'botThreshold': 1.0,
-        };
-
-        const self = this;
-        const url = this.settings.base_url + '/semantic/search/anonymous';
-
-        this.current_text = text;  // reset test to search for
-        this.error = '';
-        this.busy = true;
-
-        this.refresh(); // notify ui
-
-        jQuery.ajax({
-            headers: {
-                'Content-Type': 'application/json',
-                'Security-Id': this.settings.sid,
-                'Client-Id': SemanticSearch.getClientId(),
-                'API-Version': this.settings.api_version,
-            },
-            'type': 'PUT',
-            'url': url,
-            'data': JSON.stringify(searchObj),
-            'dataType': 'json',
-            'success': function (data) {
-
-                self.semantic_search_results = [];
-                self.semantic_search_result_map = {};
-                self.semantic_set = {};
-
-                if (data && data.resultList) {
-
-                    self.shard_size_list = data.shardSizeList;
-                    self.semantic_set = data.semanticSet;
-                    data.resultList.map(function (sr) {
-                        // enhance search result for display
-                        sr['index'] = 0;  // inner offset index
-                        sr['num_results'] = sr.textList.length;
-
-                        self.semantic_search_results.push(sr);  // add item
-                        self.semantic_search_result_map[sr.url] = sr;
-                    });
-                    self.busy = false;
-                    self.num_results = data.totalDocumentCount;
-                    const divided = data.totalDocumentCount / ui_settings.page_size;
-                    self.num_pages = parseInt(divided);
-                    if (parseInt(divided) < divided) {
-                        self.num_pages += 1;
-                    }
-                }
-                self.refresh();
-            }
-
-        })
-        .fail(function (err) {
-            self.semantic_search_results = [];
-            self.semantic_search_result_map = {};
-            console.error(JSON.stringify(err));
-            self.error = err;
-            self.busy = false;
-            self.refresh();
-        });
+        return query;
     }
 
-    // access the semantic set menu as a set of html items
-    get_semantic_set_html() {
-        return this.semantic_html;
-    }
+    /////////////////////////////////////////////////////////////////////////////////////////
 
-    select(semantic_item) {
-        let text_list = this.search_control.val().split(' ');
+    // select a semantic category item and modify the query string accordingly
+    select_semantic(semantic_item, search_text_id) {
+        const search_ctrl = $('#' + search_text_id);
+        let text_list = search_ctrl.val().split(' ');
         let found = false;
         for (const item of text_list) {
             if (item.toLowerCase() === semantic_item.toLowerCase()) {
@@ -373,81 +365,60 @@ class SemanticSearch {
             }
             new_text_list.push(semantic_item);
         }
-        this.search_control.val(SemanticSearch.join(new_text_list));
+        search_ctrl.val(SemanticSearch.join(new_text_list));
     }
 
-    // make sure a string doesn't exceed a certain size - otherwise cut it down
-    static adjust_size(str) {
-        if (str.length > 20) {
-            return str.substr(0,10) + "..." + str.substr(str.length - 10);
-        }
-        return str;
-    }
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // advanced search filter get and controllers
 
-    // join string items in a list together with spaces
-    static join(list) {
-        let str = '';
-        for (const item of list) {
-            str += ' ' + item;
-        }
-        return str.trim();
-    }
-
-    // get the html for the search results neatly drawn out
+    // get the html for the search results neatly drawn out for the UI
     get_semantic_search_html() {
         const num_results = this.semantic_search_results.length;
         if (num_results > 0 && this.kb && this.kb.id) {
-            const organisation_id = this.settings.organisationId;
+            const organisation_id = settings.organisationId;
             const kb_id = this.kb.id;
             let list = this.semantic_search_results.slice(); // copy
-            let gen_html = '';
+            let html_list = [];
             if (this.view === 'lines') {
-                gen_html = '<div class="search-background">';
-                gen_html += render_semantics(this.semantic_set);
-                const base_url = this.settings.base_url;
+                html_list.push('<div class="search-background">');
+                html_list.push(render_semantics(this.semantic_set));
+                const base_url = settings.base_url;
                 list.map(function (h) {
-                    if (h.botResult) {
-                        gen_html += render_bot(h.url, h.textList[0]);
-                    } else {
-                        const text = SemanticSearch.highlight(h.textList[h.index]);
-                        gen_html += render_result(organisation_id, kb_id, h.index, h.title, h.author, h.url, h.urlId,
-                                                  h.num_results, text, base_url);
-                    }
+                    const text = SemanticSearch.highlight(h.textList[h.index]);
+                    html_list.push(render_result(organisation_id, kb_id, h.index, h.title, h.author, h.url, h.urlId,
+                                              h.num_results, text, base_url));
                 });
 
             } else if (this.view === 'images') {
-                gen_html = '<div class="search-background">';
-                gen_html += render_semantics(this.semantic_set);
-                const base_url = this.settings.base_url;
+                html_list.push('<div class="search-background">');
+                html_list.push(render_semantics(this.semantic_set));
+                const base_url = settings.base_url;
                 list.map(function (h) {
-                    if (h.botResult) {
-                        gen_html += render_bot(h.url, h.textList[0]);
-                    } else {
-                        const text = SemanticSearch.highlight(h.textList[h.index]);
-                        gen_html += render_result_images(organisation_id, kb_id, h.index, h.title, h.author, h.url, h.urlId,
-                                                         h.num_results, text, base_url);
-                    }
+                    const text = SemanticSearch.highlight(h.textList[h.index]);
+                    html_list.push(render_result_images(organisation_id, kb_id, h.index, h.title, h.author, h.url, h.urlId,
+                                                     h.num_results, text, base_url));
                 });
-
             }
-            gen_html += render_pagination(this.page, this.num_pages, this.busy, this.num_results);
-            gen_html += '</div>';
-            return gen_html;
+            html_list.push(render_pagination(this.page, this.num_pages, this.busy, this.num_results));
+            html_list.push('</div>');
+            return html_list.join('\n');
         }
         return "";
     }
 
-    static highlight(str) {
-        let str2 = str.replace(/{hl1:}/g, "<span class='hl1'>");
-        str2 = str2.replace(/{hl2:}/g, "<span class='hl2'>");
-        str2 = str2.replace(/{hl3:}/g, "<span class='hl3'>");
-        str2 = str2.replace(/{:hl1}/g, "</span>");
-        str2 = str2.replace(/{:hl2}/g, "</span>");
-        str2 = str2.replace(/{:hl3}/g, "</span>");
-        return str2;
+    // show advanced filter menu
+    toggle_advanced_search() {
+        this.show_advanced_search = !this.show_advanced_search;
+        this.refresh();
     }
 
-    // get the knowledge base options
+    // hide advanced filter menu
+    hide_advanced_search() {
+        this.show_advanced_search = false;
+        this.refresh();
+    }
+
+    // get the knowledge base options for the advanced filter ui
     kbOptions() {
         let str = "";
         for (const kb of this.kb_list) {
@@ -456,17 +427,18 @@ class SemanticSearch {
         return str;
     }
 
-    // get the source options
+    // get the source options for the advanced filter ui
     sourceOptions() {
         let str = "<option value=''>any</option>";
         if (this.kb !== null && this.kb.sourceList) {
             for (const source of this.kb.sourceList) {
-                str += "<option value='" + source.id + "'>" + source.name + "</option>";
+                str += "<option value='" + source.sourceId + "'>" + source.name + "</option>";
             }
         }
         return str;
     }
 
+    // select a knowledge-base item through the advanced filter ui
     set_kb(id) {
         this.kb = null;
         if (id) {
@@ -479,11 +451,12 @@ class SemanticSearch {
         }
     }
 
+    // select a source item through the advanced filter ui
     set_source(id) {
         this.source = null;
         if (id && this.kb && this.kb.sourceList) {
             for (const source of this.kb.sourceList) {
-                if (source.id === id) {
+                if (source.sourceId == id) {
                     this.source = source;
                     break;
                 }
@@ -491,11 +464,15 @@ class SemanticSearch {
         }
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // details dialog box
+
+    // show the details page on screen
     showDetails(url_id, url) {
         const num_results = this.semantic_search_results.length;
-        const organisation_id = this.settings.organisationId;
+        const organisation_id = settings.organisationId;
         const kb_id = this.kb.id;
-        const base_url = this.settings.base_url;
+        const base_url = settings.base_url;
         const document = this.semantic_search_result_map[url];
         const text = SemanticSearch.highlight(document.textList[document.index]);
         this.details_html = render_details(base_url, organisation_id, kb_id, url_id, document, text, this.search_query);
@@ -503,53 +480,11 @@ class SemanticSearch {
         this.refresh();
     }
 
+    // close the details page on screen
     closeDetails() {
         this.details_html = '';
         this.show_details = false;
         this.refresh();
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////
-    // static helpers
-
-    // create a random guid
-    static guid() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000)
-                .toString(16)
-                .substring(1);
-        }
-
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-    }
-
-    // do we hav access to local-storage?
-    static hasLocalStorage(){
-        try {
-            const test = 'test';
-            localStorage.setItem(test, test);
-            localStorage.removeItem(test);
-            return true;
-        } catch(e) {
-            return false;
-        }
-    }
-
-    // get or create a session based client id for SimSage usage
-    static getClientId() {
-        let clientId = "";
-        const key = 'simsearch_client_id';
-        const hasLs = SemanticSearch.hasLocalStorage();
-        if (hasLs) {
-            clientId = localStorage.getItem(key);
-        }
-        if (!clientId || clientId.length === 0) {
-            clientId = SemanticSearch.guid(); // create a new client id
-            if (hasLs) {
-                localStorage.setItem(key, clientId);
-            }
-        }
-        return clientId;
     }
 
 }

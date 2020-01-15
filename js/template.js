@@ -74,7 +74,7 @@ function render_result(organisation_id, kb_id, id, title, author, url, url_id, n
 				    </div>\
 				    <div class="search-text">{text}</div>\
 			    </div>\
-                <div class="search-url">\
+                <div class="search-url" style="clear: both;">\
                     <a href="{url}" title="{url}" target="_blank">{display_url}</a>\
                 </div>\
 			</div>\
@@ -104,12 +104,12 @@ function render_result(organisation_id, kb_id, id, title, author, url, url_id, n
 function render_result_images(organisation_id, kb_id, id, title, author, url, url_id, num_results, text, system_url) {
     const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + url_id + '/-1';
     let result_str = '\
-		<div id={id} class="search-result-2">\
-		    <div class="search-container-2">\
-			<div class="preview-image-container-2"><img src="' + image_url + '" class="preview-image-2" alt="preview" \
+		<div id={id} class="search-result-images">\
+		    <div class="search-container-images">\
+			<div class="preview-image-container-images"><img src="' + image_url + '" class="preview-image-big" alt="preview" \
 			     title="view document details" onclick="search.showDetails({url_id}, {url_str})"/></div>\
 			</div>\
-			<div class="search-title-2" title="{title}" onclick="window.open({url_str}, {blank})">{title}</div>\
+			<div class="search-title-images" title="{title}" onclick="window.open({url_str}, {blank})">{title}</div>\
 		</div>';
 
     if (title.length === 0) {
@@ -150,120 +150,101 @@ function render_pagination(page, num_pages, busy, num_results) {
     return result_str;
 }
 
-/**
- * render bot text
- * @param url
- * @param text
- * @returns {string}
- */
-function render_bot(url, text) {
-    let result_str = '<div class="bot-capsule">' +
-        '<div class="bot-simsage-logo">' +
-        '<img class="bot-simsage-logo-size" src="images/tinman.svg" alt="SimSage" />' +
-        '</div>' +
-        '<div class="bot-msg">{text}</div>' +
-        '<div class="bot-link"><a href="{url}" target="_blank">{url}</a></div>' +
-        '</div>';
-
-    return result_str
-        .replace(/{text}/g, text)
-        .replace(/{url}/g, url);
-}
-
 function render_semantics(semantic_set) {
-    let result_str = '';
-
-    const key_list = [];
-    for (const key in semantic_set) {
-        key_list.push(key);
-    }
+    const result = [];
+    const key_list = ['People and Groups', 'Places and Locations', 'Email Addresses', 'Monetary Amounts', 'URLs',
+                      'Phone Numbers', 'Date and Time', 'Numbers'];
     if (key_list.length > 0) {
-        result_str += '<div class="semantic-container">';
-        result_str += '<div class="semantic-entry">';
-        key_list.sort();
+        result.push('<div class="semantic-container">');
         for (const key of key_list) {
+            result.push('<div class="semantic-entry">');
+            result.push('<div class="semantic-title">' + key + '</div>');
             if (semantic_set.hasOwnProperty(key)) {
                 const item_list = semantic_set[key];
                 if (item_list.length > 0) {
-                    result_str += '<div class="semantic-title">' + key + '</div>';
                     for (const item of item_list) {
-                        result_str += '<div class="semantic-text" title="' + item + '" onclick="search.select(\'' + item + '\')">';
-                        result_str += adjust_size(item, 20) + '</div>';
+                        let count = '';
+                        if (item.frequency > 1) {
+                            count += ' (' + item.frequency + ')';
+                        }
+                        result.push('<div class="semantic-text" title="' + item.word + count + '" onclick="search.select_semantic(\'' + item.word + '\', \'txtSearch\')">');
+                        result.push(adjust_size(item.word, 20) + count + '</div>');
                     }
                 }
             }
+            result.push('</div>');
         }
-        result_str += '</div>';
-        result_str += '</div>';
+        result.push('</div>');
     }
-    return result_str;
+    return result.join('\n');
 }
 
 /* render an advanced view for a document */
 function render_details(system_url, organisation_id, kb_id, url_id, document, text, query) {
     const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + url_id + '/0';
     let result_str = '\
-                                <div class="details-title">Details\
-                                    <div class="details-close-container"><img class="details-close-image" src="images/close.svg" alt="close" title="close dialog" onclick="search.closeDetails()" /></div></div>\
-                                <div class="details-pane">\
-                                  <div class="details-text">\
-                                    <div class="details-item">\
-                                      <div class="details-label">url</div>\
-                                      <div class="details-label-text-url" title="{url}" onclick="window.open({url_str},{blank})">{display_url}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">title</div>\
-                                      <div class="details-label-text">{title}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">author</div>\
-                                      <div class="details-label-text">{author}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">document type</div>\
-                                      <div class="details-label-text">{document_type}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">document size</div>\
-                                      <div class="details-label-text">{document_size}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">source</div>\
-                                      <div class="details-label-text">{source}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">created</div>\
-                                      <div class="details-label-text">{created}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">last modified</div>\
-                                      <div class="details-label-text">{last_modified}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">last crawled</div>\
-                                      <div class="details-label-text">{last_crawled}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">sentence count</div>\
-                                      <div class="details-label-text">{num_sentences}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">word count</div>\
-                                      <div class="details-label-text">{num_words}</div>\
-                                    </div>\
-                                    <div class="details-item">\
-                                      <div class="details-label">search query</div>\
-                                      <div class="details-label-text">{query}</div>\
-                                    </div>\
-                                    <div class="details-item-text">\
-                                        <div class="search-container-summary">{text}</div>\
-                                    </div>\
-                                  </div>\
-                                  <div class="details-preview-image-box">\
-                                    <img src="{image_url}" alt="page preview" class="details-preview-image" title="page preview" />\
-                                  </div>\
-                                </div>\
-                                <div class="details-navigation"></div>\
+                        <div class="details-title">Details\
+                            <div class="details-close-container"><img class="details-close-image" src="images/close.svg" alt="close" title="close dialog" onclick="search.closeDetails()" /></div>\
+                        </div>\
+                        <div class="details-pane">\
+                          <div class="details-text">\
+                            <div class="details-item">\
+                              <div class="details-label">url</div>\
+                              <div class="details-label-text-url" title="{url}" onclick="window.open({url_str},{blank})">{display_url}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">title</div>\
+                              <div class="details-label-text">{title}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">author</div>\
+                              <div class="details-label-text">{author}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">document type</div>\
+                              <div class="details-label-text">{document_type}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">document size</div>\
+                              <div class="details-label-text">{document_size}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">source</div>\
+                              <div class="details-label-text">{source}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">created</div>\
+                              <div class="details-label-text">{created}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">last modified</div>\
+                              <div class="details-label-text">{last_modified}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">last crawled</div>\
+                              <div class="details-label-text">{last_crawled}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">sentence count</div>\
+                              <div class="details-label-text">{num_sentences}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">word count</div>\
+                              <div class="details-label-text">{num_words}</div>\
+                            </div>\
+                            <div class="details-item">\
+                              <div class="details-label">search query</div>\
+                              <div class="details-label-text">{query}</div>\
+                            </div>\
+                            <div class="details-item-text">\
+                                <div class="search-container-summary">{text}</div>\
+                            </div>\
+                          </div>\
+                          <div class="details-preview-image-box">\
+                            <img src="{image_url}" alt="page preview" class="details-preview-image" title="page preview" />\
+                          </div>\
+                        </div>\
+                        <div class="details-navigation"></div>\
     ';
     return result_str
         .replace(/{title}/g, adjust_size(document.title, 50))
@@ -282,67 +263,4 @@ function render_details(system_url, organisation_id, kb_id, url_id, document, te
         .replace(/{last_crawled}/g, unix_time_to_str(document.uploaded))
         .replace(/{created}/g, unix_time_to_str(document.created))
         .replace(/{image_url}/g, image_url);
-}
-
-
-/************* bot specific render items ****************/
-
-function linksToHtml(urlList) {
-    let linkStr = "";
-    if (urlList) {
-        for (const url of urlList) {
-            linkStr += "<div class='link'><a href='" + url + "' target='_blank'>" + url + "</a></div>";
-        }
-    }
-    if (linkStr.length > 0) {
-        linkStr = "<br/><div class='link-box'>" + linkStr + "</div>";
-    }
-    return linkStr;
-}
-
-function userMessageWrapper(text, urlList) {
-    return "<div class=\"chatbox_body_message chatbox_body_message-right\">\n" +
-        "<div class=\"bot-human\" title=\"you said\"></div>\n" +
-        "<div class=\"bot-message\">" + text + linksToHtml(urlList) + "</div>\n" +
-        "</div>\n"
-}
-
-function simSageMessageWrapper(text, urlList) {
-    return "<div class=\"chatbox_body_message chatbox_body_message-left\">\n" +
-        "<div class=\"bot-machine\" title=\"SimSage said\"></div>\n" +
-        "<div class=\"bot-message\">" + text + linksToHtml(urlList) + "</div>\n" +
-        "</div>\n"
-}
-
-function systemBusyMessage() {
-    return  "<div class=\"busy-image-container\"><img class=\"busy-image\" src=\"images/dots.gif\" alt=\"please wait\"></div>\n";
-}
-
-function systemGetUserEmail() {
-    return  "<div class=\"email-ask\">" +
-        ui_settings.bot_email_message + "\n" +
-        "<input class='email-address' id='email' onkeypress='bot.sendEmailKey(event)' type='text' placeholder='Email Address' />" +
-        "<div class='send-email-button' onclick='bot.sendEmail()' title='send email'></div></div>"
-}
-
-// convert the message list of a series of html items
-function botMessageListToHtmlHelper(message_list, error, operatorTyping, askForEmailAddress) {
-    let result = "<div style='padding: 10px;'><div/>";
-    let lastMessageUser = false;
-    message_list.map((item) => {
-        if (item.text && item.origin === "simsage") {
-            result += simSageMessageWrapper(item.text, item.urlList);
-            lastMessageUser = false;
-        } else if (item.text) {
-            result += userMessageWrapper(item.text, item.urlList);
-            lastMessageUser = true;
-        }
-    });
-    if (lastMessageUser && error === '' && operatorTyping) {
-        result += systemBusyMessage();
-    }
-    if (askForEmailAddress) {
-        result += systemGetUserEmail();
-    }
-    return result;
 }

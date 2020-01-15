@@ -9,8 +9,8 @@
 	<script src="js/template.js"></script>
 	<script src="settings.js"></script>
 	<script src="ui_settings.js"></script>
+	<script src="js/simsage_common.js"></script>
 	<script src="js/semantic_search.js"></script>
-	<script src="js/bot.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="css/material-icons.css" />
 	<link rel="stylesheet" type="text/css" href="css/search.css">
@@ -37,9 +37,9 @@
 	<div class="centered-page">
 		<div class="search-control">
 			<div class="advanced-search" title="advanced search" onclick="advanced_search_click()">
-				<div id="advancedSearchButton" class="select-style"><div class="select-text">filter</div>
+				<div id="advancedSearchButton" class="select-style no-select"><div class="select-text">filter</div>
 					<div class="select-triangle">
-						<img src="images/down-triangle.svg" alt="select" class="triangle-image">
+						<img src="images/down-triangle.svg" alt="adv-search-item-select" class="triangle-image">
 					</div>
 				</div>
 			</div>
@@ -47,7 +47,7 @@
 				<input type="text" class="input-text" id="txtSearch" onclick="search.hide_advanced_search()" onkeypress="search_enter(event)">
 			</div>
 			<div id="btnSearch" class="search-button-box" title="search" onclick="search_click()">
-				<img src="images/search.svg" class="search-image" alt="search" onclick="search_click()">
+				<img src="images/search.svg" class="search-image" alt="search">
 			</div>
 		</div>
 	</div>
@@ -55,11 +55,11 @@
 
 	<!-- advanced search button and menu -->
 	<div class="centered-page">
-		<div id="advancedSearch" class="metadata-area" style="display: none;">
+		<div id="advancedSearch" class="advanced-search-area" style="display: none;">
 			<div class="floaty">
 				<div class="metadata-type">
 					<label class="search-label" for="txtTypeFilter">document type</label>
-					<select id="txtTypeFilter" name="document-type" class="select" onchange="change_advanced_search()">
+					<select id="txtTypeFilter" name="document-type" class="adv-search-item-select" onchange="change_advanced_search()">
 						<option value="">not selected</option>
 						<option value="html,htm">web pages</option>
 						<option value="doc,docx">word documents</option>
@@ -70,12 +70,12 @@
 				</div>
 				<div class="metadata-type">
 					<label class="search-label" for="ddKnowledgeBase">knowledge base</label>
-					<select id="ddKnowledgeBase" name="knowledge-base" class="select" onchange="change_advanced_search()">
+					<select id="ddKnowledgeBase" name="knowledge-base" class="adv-search-item-select" onchange="change_advanced_search()">
 					</select>
 				</div>
 				<div class="metadata-type">
 					<label class="search-label" for="ddSource">source</label>
-					<select id="ddSource" name="source" class="select" onchange="change_advanced_search()">
+					<select id="ddSource" name="source" class="adv-search-item-select" onchange="change_advanced_search()">
 					</select>
 				</div>
 				<div class="metadata-url">
@@ -97,27 +97,25 @@
 		</div>
 	</div>
 
-
-
-	<br />
-	<br />
-
-
-	<!-- advanced search button and menu -->
-	<div id="botResults" class="bot-centered-page">
-		<div class="bot-chats no-select" id="chat" ondblclick="bot.min_max_bot_window_click()">
+	<!-- speech bubble for assistant replies -->
+	<div class="bubble-centered-page">
+		<div id="divBotBubble" class="bubble-speech-container">
+			<div class="bubble-speaker-icon"></div>
+			<div class="bubble-close-icon" title="close this speech bubble" onclick="hide_speech_bubble()">
+				<img src="images/dark-close.svg" alt="close" class="bubble-close-image"/>
+			</div>
+			<div id="divSpeechBubble" class="bubble-text"></div>
+			<a href="" id="botUrl" target="_blank" class="bubble-link"></a>
 		</div>
-		<div id="btnBotMaxMin" class="bot-close-button" title="minimize this bot window" onclick="bot.min_max_bot_window_click()">
-			<img src="images/chevrons.svg" class="bot-close-image" alt="close" />
-		</div>
-		<div style="clear: both"></div>
 	</div>
-
 
 	<!-- semantic search results container -->
-	<div id="results" class="centered-page">
+	<div id="results" class="search-centered-page">
 	</div>
 
+	<div id="no-results" class="no-results-centered-page">
+		no results found
+	</div>
 
 	<!-- semantic search details page -->
 	<div id="divDetails" class="details-page" style="display: none;">
@@ -125,19 +123,19 @@
 
 
 	<!-- sign-in dialog -->
-	<div class="form-popup">
+	<div class="sign-in-form-popup">
 		<h1 class="title">sign-in</h1>
 		<div id="divEmail">
 			<label for="txtEmail"><b>Email</b></label>
-			<input id="txtEmail" class="txtEmail" type="text" title="your email address" placeholder="Enter Email" name="email" required>
+			<input id="txtEmail" class="sign-in-email" type="text" title="your email address" placeholder="Enter Email" name="email" required>
 		</div>
 		<div id="divPassword">
 			<label for="txtPassword"><b>Password</b></label>
-			<input id="txtPassword" class="txtPassword" title="your SimSage password" type="password" placeholder="Enter Password" name="psw" required>
+			<input id="txtPassword" class="sign-in-password" title="your SimSage password" type="password" placeholder="Enter Password" name="psw" required>
 		</div>
-		<div class="divButtons">
-			<button type="submit" class="btn" title="click this button to sign-in after typing in your email and password.">Sign-in</button>
-			<button type="submit" class="btn cancel" title="close the sign-in dialog box." onclick="search.close_sign_in()">Cancel</button>
+		<div class="sign-in-button">
+			<button type="submit" class="sign-in-btn" title="click this button to sign-in after typing in your email and password.">Sign-in</button>
+			<button type="submit" class="sign-in-btn sign-in-cancel" title="close the sign-in dialog box." onclick="search.close_sign_in()">Cancel</button>
 		</div>
 	</div>
 
