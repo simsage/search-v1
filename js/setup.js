@@ -17,18 +17,13 @@ const error_dialog = $("#dlgError");
 const error_text = $("#txtError");
 const btn_sign_in = $("#btnSignIn");
 const txt_email = $("#txtEmail");
-const sign_in_section = $("#imgSignIn");
-
-// focus on the search field
-search_ctrl.focus();
+const sign_in_section = $("#divSignIn");
+const sign_in_dlg = $("#divSignInDlg");
+const sign_out_dlg = $("#divSignOutDlg");
+const dd_domain = $("#ddDomain");
 
 // escape do a few things
 document.addEventListener('keydown', checkEscape);
-
-// sign in visible?
-if (ui_settings.show_sign_in) {
-    sign_in_section.show();
-}
 
 // advanced search visible?
 if (ui_settings.show_advanced_filter) {
@@ -65,7 +60,13 @@ function update_ui(search) {
         }
     }
 
-    if (search.semantic_search_results.length > 0) {
+    // focus on the search field?
+    if (search.is_connected && !search.was_connected) {
+        search_ctrl.focus();
+        search.was_connected = true;
+    }
+
+    if (search.semantic_search_results.length > 0 || search.busy) {
         poweredBy.hide();
     } else {
         poweredBy.show();
@@ -124,11 +125,29 @@ function update_ui(search) {
         } else {
             btn_sign_in.attr('src', 'images/signout.svg');
         }
+
+        // sign in visible?
+        if (search.getDomainListForCurrentKB().length > 0) {
+            sign_in_section.show();
+            if (search.signed_in) {
+                sign_in_section.removeClass("sign-in-view-type");
+                sign_in_section.addClass("signed-in-view-type")
+            } else {
+                sign_in_section.removeClass("signed-in-view-type");
+                sign_in_section.addClass("sign-in-view-type")
+            }
+        }
+        // only show sign-in if setup, AND the selected kb has at least one domain available
         if (search.show_signin) {
-            $(".sign-in-form-popup").show();
-            txt_email.focus();
+            if (search.signed_in) {
+                sign_out_dlg.show();
+            } else {
+                sign_in_dlg.show();
+                txt_email.focus();
+            }
         } else {
-            $(".sign-in-form-popup").hide();
+            sign_in_dlg.hide();
+            sign_out_dlg.hide();
         }
         // bot result?
         if (search.bot_text && search.bot_text.length > 0 && search.bubble_visible) {
@@ -142,6 +161,8 @@ function update_ui(search) {
 
         // no results at all?
         if (search.bot_text.length === 0 && search.semantic_search_results.length === 0 && search.search_query.length > 0) {
+            console.log(search.no_results());
+            no_results.html(search.no_results());
             no_results.show();
         } else {
             no_results.hide();
@@ -229,14 +250,18 @@ function change_advanced_search() {
         if (typeFilter.length > 0)
             search.fileType = typeFilter.split(",");
         if (urlFilter.length > 0)
-            search.url = urlFilter.split(",");
+            search.url = [urlFilter.trim()];
         if (titleFilter.length > 0)
-            search.title = titleFilter.split(",");
+            search.title = [titleFilter.trim()];
         if (authorFilter.length > 0)
-            search.author = authorFilter.split(",");
+            search.author = [authorFilter.trim()];
     } else {
         $(".advanced-search-tick").css("display", "none");
     }
+}
+
+function change_domain() {
+    search.domainId = dd_domain.val();
 }
 
 // load initial document settings from server

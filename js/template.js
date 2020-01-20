@@ -150,12 +150,25 @@ function render_pagination(page, num_pages, busy, num_results) {
     return result_str;
 }
 
+
+// render both the semantics and the context of items on the rhs of the screen
+function render_rhs_containers(context_stack, selected_syn_sets, semantic_set) {
+    const result = [];
+    result.push('<div class="search-background">');
+    result.push('<div class="semantic-container">');
+    result.push(render_context(context_stack, selected_syn_sets));
+    result.push('<div class="spacer"></div>');
+    result.push(render_semantics(semantic_set));
+    result.push('</div>');
+    return result.join('\n');
+}
+
+
 function render_semantics(semantic_set) {
     const result = [];
     const key_list = ['People and Groups', 'Places and Locations', 'Email Addresses', 'Monetary Amounts', 'URLs',
                       'Phone Numbers', 'Date and Time', 'Numbers'];
     if (key_list.length > 0) {
-        result.push('<div class="semantic-container">');
         for (const key of key_list) {
             result.push('<div class="semantic-entry">');
             result.push('<div class="semantic-title">' + key + '</div>');
@@ -174,9 +187,65 @@ function render_semantics(semantic_set) {
             }
             result.push('</div>');
         }
-        result.push('</div>');
     }
     return result.join('\n');
+}
+
+// render the context selection system
+function render_context(context_stack, selected_syn_sets) {
+    const result = [];
+    if (context_stack && context_stack.length > 0) {
+        for (const context_str of context_stack) {
+            const i1 = context_str.indexOf(':');
+            if (i1 > 0) {
+                const word = context_str.substr(0, i1).trim();
+                const clouds = context_str.substr(i1 + 1).split("/");
+                const selected = selected_syn_sets[word.toLowerCase().trim()];
+                if (clouds.length > 1) {
+                    result.push('<div class="context-entry">');
+                    result.push('<div class="context-title">');
+                    result.push('<select class="context-dd" onchange=\'search.select_syn_set("' + word + '",this.selectedIndex - 1);\'>');
+                    result.push('<option value="-1">any</option>');
+                    for (const i in clouds) {
+                        if (clouds.hasOwnProperty(i)) {
+                            if (selected == i) {
+                                result.push('<option value="' + i + '" selected>' + clouds[i] + '</option>');
+                            } else {
+                                result.push('<option value="' + i + '">' + clouds[i] + '</option>');
+                            }
+                        }
+                    }
+                    result.push('</select>' + word + '</div>');
+                    result.push('</div>');
+                }
+            }
+        }
+    }
+    return result.join('\n');
+}
+
+
+/* render a "no results found" page - and optionally ask for an email address */
+function render_no_results(ask_for_email, know_email) {
+    if (ask_for_email && !know_email) {
+        return render_get_user_email()
+    } else if (ask_for_email && know_email) {
+        return render_have_user_email();
+    } else {
+        return  "<div class=\"no-email-ask\">" + ui_settings.no_email_message + "\n<br/></div>";
+    }
+}
+
+/* render getting the user's email address (asking for) */
+function render_get_user_email() {
+    return  "<div class=\"email-ask\">" + ui_settings.email_message + "\n<br/>" +
+        "<input class='email-address' id='email' onkeypress='search.email_keypress(event)' type='text' placeholder='Email Address' />" +
+        "<div class='send-email-button' onclick='search.send_email()' title='send email'></div></div>"
+}
+
+/* render getting the user's email address (asking for) */
+function render_have_user_email() {
+    return  "<div class=\"no-email-ask\">" + ui_settings.have_email_message + "\n<br/></div>";
 }
 
 /* render an advanced view for a document */

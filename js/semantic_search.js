@@ -6,6 +6,9 @@
 const mt_Disconnect = "disconnect";
 const mt_Error = "error";
 const mt_Message = "message";
+const mt_Email = "email";
+const mt_SignIn = "sign-in";
+const mt_SignOut = "sign-out";
 
 // semantic search class
 class SemanticSearch extends SimSageCommon {
@@ -33,6 +36,8 @@ class SemanticSearch extends SimSageCommon {
 
         // semantic set (categories on the side from semantic search results)
         this.semantic_set = {};
+        this.context_stack = [];            // syn-set management
+        this.selected_syn_sets = {};
 
         // details page
         this.show_details = false;
@@ -55,8 +60,12 @@ class SemanticSearch extends SimSageCommon {
         // the user's current query
         this.search_query = '';
 
+        // do we know this person's email addreess already?
+        this.knowEmail = false;
+
         // sign-in details
         this.show_signin = false;
+        this.signed_in = false;
         this.session_id = '';
     }
 
@@ -67,6 +76,7 @@ class SemanticSearch extends SimSageCommon {
         if (this.is_connected && this.kb) {
 
             const search_query_str = this.semantic_search_query_str(text);
+            console.log('search_query_str:' + search_query_str);
             if (search_query_str !== '()') {
                 this.search_query = text;
                 this.show_advanced_search = false;
@@ -114,12 +124,36 @@ class SemanticSearch extends SimSageCommon {
     // overwrite: generic web socket receiver
     receive_ws_data(data) {
         this.busy = false;
+        console.log(data);
         if (data) {
             if (data.messageType === mt_Error && data.error.length > 0) {
                 this.error = data.error;  // set an error
                 this.refresh();
 
             } else if (data.messageType === mt_Disconnect) {
+                this.refresh();
+
+            } else if (data.messageType === mt_SignIn) {
+                if (data.errorMessage && data.errorMessage.length > 0) {
+                    this.error = data.errorMessage;  // set an error
+                    this.signed_in = false;
+                } else {
+                    // sign-in successful
+                    this.signed_in = true;
+                    this.close_sign_in();
+                }
+                this.refresh();
+
+            } else if (data.messageType === mt_SignOut) {
+
+                if (data.errorMessage && data.errorMessage.length > 0) {
+                    this.error = data.errorMessage;  // set an error
+                } else {
+                    // sign-in successful
+                    this.show_signin = false;
+                    this.signed_in = false;
+                    this.close_sign_in();
+                }
                 this.refresh();
 
             } else if (data.messageType === mt_Message) {
@@ -130,12 +164,14 @@ class SemanticSearch extends SimSageCommon {
                 this.semantic_search_results = [];
                 this.semantic_search_result_map = {};
                 this.semantic_set = {};
+                this.context_stack = [];
 
                 // did we get semantic search results?
                 if (data.resultList) {
 
                     this.shard_size_list = data.shardSizeList;
                     this.semantic_set = data.semanticSet;
+                    this.context_stack = data.contextStack;
                     data.resultList.map(function (sr) {
 
                         if (!sr.botResult) {
@@ -164,8 +200,9 @@ class SemanticSearch extends SimSageCommon {
                     }
                 }
 
-                // no results found
-                if (!data.hasResult) {
+                // copy the know email flag from our results
+                if (!this.knowEmail && data.knowEmail) {
+                    this.knowEmail = data.knowEmail;
                 }
 
                 this.refresh();
@@ -187,8 +224,72 @@ class SemanticSearch extends SimSageCommon {
         this.refresh();
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // no results render system and its email handler
+
+    no_results() {
+        return render_no_results(ui_settings.ask_email, this.knowEmail);
+    }
+
+    send_email() {
+        let emailAddress = $("#email").val();
+        if (emailAddress && emailAddress.length > 0 && emailAddress.indexOf("@") > 0) {
+            this.stompClient.send("/ws/ops/email", {},
+                JSON.stringify({
+                    'messageType': mt_Email,
+                    'organisationId': settings.organisationId,
+                    'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                    'clientId': SemanticSearch.getClientId(),
+                    'emailAddress': emailAddress,
+                }));
+            this.error = '';
+            this.has_result = false;
+            this.knowEmail = true;
+            this.refresh();
+        }
+    }
+
+    // key handling for the email popup control inside the bot window
+    email_keypress(event) {
+        if (event && event.keyCode === 13) {
+            this.send_email();
+        }
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // sign in system
+
+    // do the actual sign-in
+    sign_in(user_name, password) {
+        if (user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
+            this.stompClient.send("/ws/ops/ad/sign-in", {},
+                JSON.stringify({
+                    'organisationId': settings.organisationId,
+                    'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                    'clientId': SemanticSearch.getClientId(),
+                    'domainId': this.domainId,
+                    'userName': user_name,
+                    'password': password,
+                }));
+            this.error = '';
+            this.has_result = false;
+            this.refresh();
+        }
+    }
+
+    sign_out() {
+        this.stompClient.send("/ws/ops/ad/sign-out", {},
+            JSON.stringify({
+                'organisationId': settings.organisationId,
+                'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                'clientId': SemanticSearch.getClientId(),
+                'domainId': this.domainId,
+            }));
+        this.error = '';
+        this.has_result = false;
+        this.refresh();
+    }
 
     // sign-in or out
     show_sign_in() {
@@ -269,12 +370,35 @@ class SemanticSearch extends SimSageCommon {
         this.semantic_search_results = [];
     }
 
+    // remove duplicate strings from body search text and add synset items
+    process_body_string(text) {
+        const parts = text.split(" ");
+        const newList = [];
+        const duplicates = {};
+        for (const _part of parts) {
+            const part = _part.trim().toLowerCase();
+            if (part.length > 0) {
+                if (!duplicates.hasOwnProperty(part)) {
+                    duplicates[part] = 1;
+
+                    const synSet = this.selected_syn_sets[part];
+                    if (typeof synSet !== 'undefined' && parseInt(synSet) >= 0) {
+                        newList.push(_part.trim() + '/' + synSet);
+                    } else {
+                        newList.push(_part.trim());
+                    }
+                }
+            }
+        }
+        return newList.join(" ");
+    }
+
     // get a semantic search query string for all the filters etc.
     semantic_search_query_str(text) {
         let query = "(";
         let needsAnd = false;
         if (text.length > 0) {
-            query += "body: " + text;
+            query += "body: " + this.process_body_string(text);
             needsAnd = true;
         }
         if (this.url.length > 0) {
@@ -369,6 +493,14 @@ class SemanticSearch extends SimSageCommon {
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
+    // syn-set context management
+
+    // select a syn-set
+    select_syn_set(word, value) {
+        this.selected_syn_sets[word.toLowerCase().trim()] = value;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
     // advanced search filter get and controllers
 
     // get the html for the search results neatly drawn out for the UI
@@ -380,8 +512,7 @@ class SemanticSearch extends SimSageCommon {
             let list = this.semantic_search_results.slice(); // copy
             let html_list = [];
             if (this.view === 'lines') {
-                html_list.push('<div class="search-background">');
-                html_list.push(render_semantics(this.semantic_set));
+                html_list.push(render_rhs_containers(this.context_stack, this.selected_syn_sets, this.semantic_set));
                 const base_url = settings.base_url;
                 list.map(function (h) {
                     const text = SemanticSearch.highlight(h.textList[h.index]);
@@ -390,8 +521,7 @@ class SemanticSearch extends SimSageCommon {
                 });
 
             } else if (this.view === 'images') {
-                html_list.push('<div class="search-background">');
-                html_list.push(render_semantics(this.semantic_set));
+                html_list.push(render_rhs_containers(this.context_stack, this.selected_syn_sets, this.semantic_set));
                 const base_url = settings.base_url;
                 list.map(function (h) {
                     const text = SemanticSearch.highlight(h.textList[h.index]);
@@ -448,6 +578,7 @@ class SemanticSearch extends SimSageCommon {
                     break;
                 }
             }
+            this.setup_domains(); // change in domains
         }
     }
 

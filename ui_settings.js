@@ -22,8 +22,15 @@ ui_settings = {
     // and how sensitive the bot response should be
     bot_threshold: 0.8125,
 
-    // enable people to login to SimSage?
-    show_sign_in: false,
+    // ask users for their email if nothing found?
+    ask_email: true,
+    // if we don't have their email, how should we ask for it?
+    email_message: "<b>No results found</b><br/><br/>Would you mind giving me your email address so we can follow up with more information?",
+    // if we don't have their email, how should we ask for it?
+    have_email_message: "<b>No results found</b><br/><br/>Thanks for contacting us, we will get back to you shortly.",
+    // not asking for an email address?
+    no_email_message: "<b>No results found</b>",
+
     // show the advanced filter?
     show_advanced_filter: true,
 };
