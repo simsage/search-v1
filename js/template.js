@@ -45,6 +45,18 @@ function size_to_str(size) {
 }
 
 
+/**
+ * render a bot button
+ * @param id the id
+ * @param text the text to display in the button
+ * @param action the action to perform
+ */
+function render_button(text, action) {
+    return "<div class='bot-button' title='" + text + "' onclick='" + action + "'>" + text + "</div>";
+}
+
+
+
 /*
  * render a single search result - replacing text as needed for a thing called a "search" object
  * callbacks:

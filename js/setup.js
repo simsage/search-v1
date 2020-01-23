@@ -6,7 +6,7 @@ const btn_search = $("#btnSearch");
 const results = $("#results");
 const bot_display = $("#divBotBubble");
 const bot_text = $("#divSpeechBubble");
-const bot_url = $("#botUrl");
+const bot_buttons = $("#botButtons");
 const details = $("#divDetails");
 const advanced_search = $("#advancedSearch");
 const poweredBy = $("#poweredBy");
@@ -153,15 +153,13 @@ function update_ui(search) {
         if (search.bot_text && search.bot_text.length > 0 && search.bubble_visible) {
             bot_display.show();
             bot_text.html(search.bot_text);
-            bot_url.html(search.bot_url);
-            bot_url.attr("href", search.bot_url);
+            bot_buttons.html(search.render_buttons());
         } else {
             bot_display.hide();
         }
 
         // no results at all?
         if (search.bot_text.length === 0 && search.semantic_search_results.length === 0 && search.search_query.length > 0) {
-            console.log(search.no_results());
             no_results.html(search.no_results());
             no_results.show();
         } else {

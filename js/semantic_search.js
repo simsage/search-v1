@@ -9,6 +9,7 @@ const mt_Message = "message";
 const mt_Email = "email";
 const mt_SignIn = "sign-in";
 const mt_SignOut = "sign-out";
+const mt_SpellingSuggest = "spelling-suggest";
 
 // semantic search class
 class SemanticSearch extends SimSageCommon {
@@ -30,8 +31,8 @@ class SemanticSearch extends SimSageCommon {
         this.shard_size_list = [];
 
         // bot details
-        this.bot_url = '';
         this.bot_text = '';
+        this.bot_buttons = [];
         this.bubble_visible = true; // is the bot visible?
 
         // semantic set (categories on the side from semantic search results)
@@ -74,9 +75,8 @@ class SemanticSearch extends SimSageCommon {
     // perform the semantic search
     do_semantic_search(text) {
         if (this.is_connected && this.kb) {
-
+            text = this.clean_query_text(text);
             const search_query_str = this.semantic_search_query_str(text);
-            console.log('search_query_str:' + search_query_str);
             if (search_query_str !== '()') {
                 this.search_query = text;
                 this.show_advanced_search = false;
@@ -101,6 +101,7 @@ class SemanticSearch extends SimSageCommon {
                     'fragmentCount': ui_settings.fragment_count,
                     'maxWordDistance': ui_settings.max_word_distance,
                     'searchThreshold': ui_settings.score_threshold,
+                    'spellingSuggest': ui_settings.use_spelling_suggest,
                     'sourceId': source_id,
                 };
 
@@ -111,6 +112,8 @@ class SemanticSearch extends SimSageCommon {
                 this.error = "Please enter a query to start searching.";
                 this.refresh();
             }
+        } else {
+            this.refresh();
         }
     }
 
@@ -121,10 +124,70 @@ class SemanticSearch extends SimSageCommon {
         }
     }
 
+    // correct the spelling
+    correct_spelling(text) {
+        $("#txtSearch").val(text);
+        this.bot_text = '';
+        this.bot_buttons = [];
+        this.do_semantic_search(text);
+    }
+
+    close_bot_window() {
+        this.bot_text = '';
+        this.bot_buttons = [];
+        this.refresh();
+    }
+
+    render_buttons() {
+        if (this.bot_buttons.length > 0) {
+            const list = [];
+            for (const button of this.bot_buttons) {
+                list.push(render_button(button.text, button.action));
+            }
+            return list.join("\n");
+        }
+        return "";
+    }
+
+    visit(url) {
+        if (url && url.length > 0) {
+            window.open(url, '_blank');
+        }
+    }
+
+    // get a name from a url
+    get_url_name(url) {
+        if (url && url.length > 0) {
+            const i1 = url.lastIndexOf('/');
+            if (i1 > 0) {
+                const name = url.substring(i1 + 1).trim();
+                if (name.length === 0) {
+                    const strip_list = ["http://www.", "https://www.", "http://", "https://"];
+                    for (const strip of strip_list) {
+                        if (url.startsWith(strip)) {
+                            const subName = url.substring(strip.length);
+                            const i2 = subName.indexOf('.');
+                            if (i2 > 0) {
+                                return subName.substring(0, i2);
+                            }
+                            return name;
+                        }
+                    }
+                    return name;
+                }
+                const i2 = name.indexOf('.');
+                if (i2 > 0) {
+                    return name.substring(0, i2);
+                }
+                return name;
+            }
+        }
+        return "no name";
+    }
+
     // overwrite: generic web socket receiver
     receive_ws_data(data) {
         this.busy = false;
-        console.log(data);
         if (data) {
             if (data.messageType === mt_Error && data.error.length > 0) {
                 this.error = data.error;  // set an error
@@ -144,6 +207,15 @@ class SemanticSearch extends SimSageCommon {
                 }
                 this.refresh();
 
+            } else if (data.messageType === mt_SpellingSuggest) {
+                // speech bubble popup with actions
+                this.bot_text = "Did you mean: " + data.text;
+                this.bot_buttons = [];
+                this.bot_buttons.push({text: "yes", action: 'search.correct_spelling("' + data.text + '");'});
+                this.bot_buttons.push({text: "no", action: 'search.close_bot_window();'});
+                this.refresh();
+
+
             } else if (data.messageType === mt_SignOut) {
 
                 if (data.errorMessage && data.errorMessage.length > 0) {
@@ -159,12 +231,12 @@ class SemanticSearch extends SimSageCommon {
             } else if (data.messageType === mt_Message) {
 
                 const self = this;
-                this.bot_url = '';
                 this.bot_text = '';
                 this.semantic_search_results = [];
                 this.semantic_search_result_map = {};
                 this.semantic_set = {};
                 this.context_stack = [];
+                this.bot_buttons = [];
 
                 // did we get semantic search results?
                 if (data.resultList) {
@@ -196,7 +268,14 @@ class SemanticSearch extends SimSageCommon {
                 if (data.hasResult && data.text && data.text.length > 0) {
                     this.bot_text = data.text;
                     if (data.urlList && data.urlList.length > 0) {
-                        this.bot_url = data.urlList[0];
+                        for (const url of data.urlList) {
+                            for (const sub_url of url.split(' ')) {
+                                this.bot_buttons.push({
+                                    text: this.get_url_name(sub_url),
+                                    action: 'search.visit("' + sub_url + '");'
+                                });
+                            }
+                        }
                     }
                 }
 
@@ -391,6 +470,15 @@ class SemanticSearch extends SimSageCommon {
             }
         }
         return newList.join(" ");
+    }
+
+    // clean text - remove characters we use for special purposes
+    clean_query_text(text) {
+        // remove any / : ( ) characters from text first
+        text = text.replace(/\//g, ' ');
+        text = text.replace(/\)/g, ' ');
+        text = text.replace(/\(/g, ' ');
+        return text.replace(/:/g, ' ');
     }
 
     // get a semantic search query string for all the filters etc.

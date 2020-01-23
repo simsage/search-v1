@@ -31,6 +31,8 @@ ui_settings = {
     // not asking for an email address?
     no_email_message: "<b>No results found</b>",
 
-    // show the advanced filter?
+    // correct typos?
+    use_spelling_suggest: true,
+    // show the advanced filter menu?
     show_advanced_filter: true,
 };
