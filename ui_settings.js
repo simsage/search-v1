@@ -17,10 +17,14 @@ ui_settings = {
     bot_floating_dialog: false,
     // what a no result reply looks like
     system_no_results_reply: "Thanks for your question; we'll get back to you shortly.",
+    // if we don't have an operator available, tell the user thusly
+    operator_message: "Sorry, there are currently no free operators for you to talk to.",
     // speak?
     bot_voice_enabled: false,
     // and how sensitive the bot response should be
     bot_threshold: 0.8125,
+    // does this UI have direct operator access?
+    can_contact_ops_direct: true,
 
     // ask users for their email if nothing found?
     ask_email: true,

@@ -47,7 +47,6 @@ function size_to_str(size) {
 
 /**
  * render a bot button
- * @param id the id
  * @param text the text to display in the button
  * @param action the action to perform
  */
@@ -138,6 +137,44 @@ function render_result_images(organisation_id, kb_id, id, title, author, url, ur
         .replace(/{id}/g, "'" + id + "'");
 }
 
+// render the buttons at the bottom of the bot bubble
+function render_buttons(bot_buttons) {
+    if (bot_buttons && bot_buttons.length > 0) {
+        const list = [];
+        for (const button of bot_buttons) {
+            list.push(render_button(button.text, button.action));
+        }
+        return list.join("\n");
+    }
+    return "";
+}
+
+// render a busy message (animating dots)
+function render_simsage_busy() {
+    return  "<div class=\"busy-image-container\"><img class=\"busy-image\" src=\"images/dots.gif\" alt=\"please wait\"></div>\n";
+}
+
+/**
+ * apply all render items to the controls set-out for the bot bubble
+ * @param search
+ * @param bot_display_ctrl
+ * @param bot_text_ctrl
+ * @param bot_buttons_ctrl
+ */
+function render_bot(search, bot_display_ctrl, bot_text_ctrl, bot_buttons_ctrl) {
+    if (((search.bot_text && search.bot_text.length > 0) || search.is_typing) && search.bubble_visible) {
+        bot_display_ctrl.show();
+        if (search.is_typing) {
+            bot_text_ctrl.html(search.bot_text + "<br\>" + render_simsage_busy());
+        } else {
+            bot_text_ctrl.html(search.bot_text);
+        }
+        bot_buttons_ctrl.html(render_buttons(search.bot_buttons));
+    } else {
+        bot_display_ctrl.hide();
+    }
+}
+
 /**
  * render pages
  *
@@ -208,16 +245,16 @@ function render_context(context_stack, selected_syn_sets) {
     const result = [];
     if (context_stack && context_stack.length > 0) {
         for (const context_str of context_stack) {
-            const i1 = context_str.indexOf(':');
-            if (i1 > 0) {
-                const word = context_str.substr(0, i1).trim();
-                const clouds = context_str.substr(i1 + 1).split("/");
+            const syn_set = SimSageCommon.getSynSet(context_str);
+            if (syn_set) {
+                const word = syn_set["word"];
+                const clouds = syn_set["clouds"];
                 const selected = selected_syn_sets[word.toLowerCase().trim()];
                 if (clouds.length > 1) {
                     result.push('<div class="context-entry">');
                     result.push('<div class="context-title">');
-                    result.push('<select class="context-dd" onchange=\'search.select_syn_set("' + word + '",this.selectedIndex - 1);\'>');
-                    result.push('<option value="-1">any</option>');
+                    result.push('<select class="synset-selector" onchange=\'search.select_syn_set("' + word + '",this.selectedIndex - 1);\'>');
+                    result.push('<option value="-1">all</option>');
                     for (const i in clouds) {
                         if (clouds.hasOwnProperty(i)) {
                             if (selected == i) {

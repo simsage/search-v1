@@ -27,8 +27,7 @@
 		<div id="imgPictures" class="view-type" title="image view" onclick="search.image_view()">
 			<img src="images/view.svg" class="view-image-2" alt="image view" onclick="search.image_view()" />
 		</div>
-        <div id="divSignIn" class="sign-in-view-type" title="sign-in" onclick="search.show_sign_in()">
-        </div>
+        <div id="divSignIn" class="sign-in-view-type" title="sign-in" onclick="search.show_sign_in()"></div>
 	</div>
 
 
@@ -47,6 +46,9 @@
 			</div>
 			<div id="btnSearch" class="search-button-box" title="search" onclick="search_click()">
 				<img src="images/search.svg" class="search-image" alt="search">
+			</div>
+			<div id="btnOperator" class="operator-button-box" title="call operator" onclick="search.getOperatorHelp()" style="display: none">
+				<img src="images/operator.svg" class="operator-image" alt="call operator">
 			</div>
 		</div>
 	</div>
@@ -162,7 +164,7 @@
 
 	<!-- error message display bar -->
 	<div id="dlgError" class="error-dialog" style="display: none;">
-		<span class="close-button" onclick="this.parentElement.style.display='none';">&times;</span>
+		<span class="close-button" onclick="this.parentElement.style.display='none'; search.close_error();">&times;</span>
 		<div id="txtError"></div>
 	</div>
 

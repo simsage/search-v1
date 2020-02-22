@@ -3,6 +3,7 @@ const no_results = $("#no-results");
 const dd_kb = $("#ddKnowledgeBase");
 const dd_source = $("#ddSource");
 const btn_search = $("#btnSearch");
+const btn_operator = $("#btnOperator");
 const results = $("#results");
 const bot_display = $("#divBotBubble");
 const bot_text = $("#divSpeechBubble");
@@ -15,7 +16,6 @@ const img_lines = $("#imgLines");
 const img_pictures = $("#imgPictures");
 const error_dialog = $("#dlgError");
 const error_text = $("#txtError");
-const btn_sign_in = $("#btnSignIn");
 const txt_email = $("#txtEmail");
 const sign_in_section = $("#divSignIn");
 const sign_in_dlg = $("#divSignInDlg");
@@ -49,24 +49,41 @@ function update_ui(search) {
         }
     }
 
-    if (!search.is_connected || busy) {
+    // operator button visible?
+    if (search.is_connected && ui_settings.can_contact_ops_direct) {
+        btn_operator.show();
+    }
+
+    if (busy) {
         search_ctrl.attr('disabled', 'true');
         btn_search.attr('disabled', 'true');
+        btn_operator.attr('disabled', 'true');
     } else {
         if (search_ctrl.attr('disabled')) {
             search_ctrl.removeAttr('disabled');
             btn_search.removeAttr('disabled');
+            btn_operator.removeAttr('disabled');
             search_ctrl.focus();
         }
     }
+    // connected to the operator
+    if (search.assignedOperatorId.length === 0) {
+        btn_operator.removeClass("operator-button-box-connected");
+        btn_operator.addClass("operator-button-box");
+        btn_operator.attr('title', 'call operator');
+    } else {
+        btn_operator.removeClass("operator-button-box");
+        btn_operator.addClass("operator-button-box-connected");
+        btn_operator.attr('title', 'disconnect operator');
+    }
 
     // focus on the search field?
-    if (search.is_connected && !search.was_connected) {
+    if (!search.was_connected) {
         search_ctrl.focus();
         search.was_connected = true;
     }
 
-    if (search.semantic_search_results.length > 0 || search.busy) {
+    if (!search.get_has_results() || search.busy) {
         poweredBy.hide();
     } else {
         poweredBy.show();
@@ -79,10 +96,11 @@ function update_ui(search) {
     if (search.source && search.source.sourceId) {
         dd_source.val(search.source.sourceId);
     }
-    if (!busy && search.is_connected) {
+    if (!busy) {
         if (search.show_details) {
             details.html(search.details_html);
             details.show();
+            poweredBy.hide();
         } else {
             details.hide();
         }
@@ -120,21 +138,25 @@ function update_ui(search) {
                 search_ctrl.focus();
             }
         }
-        if (search.session_id === '') {
-            btn_sign_in.attr('src', 'images/signin.svg');
-        } else {
-            btn_sign_in.attr('src', 'images/signout.svg');
-        }
 
         // sign in visible?
-        if (search.getDomainListForCurrentKB().length > 0) {
+        const office365Domain = search.getAADDomain();
+        if (search.getDomainListForCurrentKB().length > 0 || office365Domain) {
             sign_in_section.show();
             if (search.signed_in) {
                 sign_in_section.removeClass("sign-in-view-type");
-                sign_in_section.addClass("signed-in-view-type")
+                sign_in_section.addClass("signed-in-view-type");
+                const user = SimSageCommon.getOffice365User();
+                if (user) {
+                    const title = 'sign-out ' + user.name;
+                    sign_in_section.attr('title', title);
+                } else {
+                    sign_in_section.attr('title', 'sign-out');
+                }
             } else {
                 sign_in_section.removeClass("signed-in-view-type");
-                sign_in_section.addClass("sign-in-view-type")
+                sign_in_section.addClass("sign-in-view-type");
+                sign_in_section.attr('title', 'sign-in');
             }
         }
         // only show sign-in if setup, AND the selected kb has at least one domain available
@@ -149,17 +171,13 @@ function update_ui(search) {
             sign_in_dlg.hide();
             sign_out_dlg.hide();
         }
-        // bot result?
-        if (search.bot_text && search.bot_text.length > 0 && search.bubble_visible) {
-            bot_display.show();
-            bot_text.html(search.bot_text);
-            bot_buttons.html(search.render_buttons());
-        } else {
-            bot_display.hide();
-        }
 
-        // no results at all?
-        if (search.bot_text.length === 0 && search.semantic_search_results.length === 0 && search.search_query.length > 0) {
+        // display the bot in all its glory
+        render_bot(search, bot_display, bot_text, bot_buttons);
+
+        // no results at all and no operator? (and we've been 'searching')
+        if (search.searching && search.bot_text.length === 0 && search.semantic_search_results.length === 0 &&
+            search.search_query.length > 0 && search.assignedOperatorId.length === 0) {
             no_results.html(search.no_results());
             no_results.show();
         } else {
@@ -169,10 +187,6 @@ function update_ui(search) {
     }
 }
 
-function hide_speech_bubble() {
-    search.hide_speech_bubble();
-}
-
 // check escape key
 function checkEscape(e) {
     if (e.code === 'Escape') {
@@ -180,7 +194,7 @@ function checkEscape(e) {
             search.show_details = false;
             details.hide();
         } else if (search.bubble_visible) {
-            hide_speech_bubble();
+            search.hide_speech_bubble();
         }
     }
 }
@@ -191,12 +205,14 @@ const search = new SemanticSearch(update_ui);
 function search_enter(event) {
     if (event.keyCode === 13) {
         search_click();
+    } else {
+        search.clientIsTyping();
     }
 }
 
 // do a semantic search
 function search_click() {
-    if (search.kb && search.is_connected) {
+    if (search.kb) {
         const search_text = search_ctrl.val();
         search.reset_pagination();
         search.do_semantic_search(search_text);
@@ -264,5 +280,6 @@ function change_domain() {
 
 // load initial document settings from server
 $( document ).ready(function() {
+    search.getKbs();
     search.ws_connect(); // connect to SimSage
 });

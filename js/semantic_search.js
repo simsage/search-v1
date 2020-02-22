@@ -7,6 +7,7 @@ const mt_Disconnect = "disconnect";
 const mt_Error = "error";
 const mt_Message = "message";
 const mt_Email = "email";
+const mt_IsTyping = "typing";
 const mt_SignIn = "sign-in";
 const mt_SignOut = "sign-out";
 const mt_SpellingSuggest = "spelling-suggest";
@@ -39,6 +40,7 @@ class SemanticSearch extends SimSageCommon {
         this.semantic_set = {};
         this.context_stack = [];            // syn-set management
         this.selected_syn_sets = {};
+        this.syn_sets_seen = {};
 
         // details page
         this.show_details = false;
@@ -66,7 +68,6 @@ class SemanticSearch extends SimSageCommon {
 
         // sign-in details
         this.show_signin = false;
-        this.signed_in = false;
         this.session_id = '';
     }
 
@@ -74,10 +75,15 @@ class SemanticSearch extends SimSageCommon {
 
     // perform the semantic search
     do_semantic_search(text) {
-        if (this.is_connected && this.kb) {
+        if (this.kb) {
+            const url = settings.base_url + '/ops/query';
+            const self = this;
+            this.error = '';
+
             text = this.clean_query_text(text);
             const search_query_str = this.semantic_search_query_str(text);
             if (search_query_str !== '()') {
+                this.searching = true;  // we're searching!
                 this.search_query = text;
                 this.show_advanced_search = false;
                 this.busy = true;
@@ -105,9 +111,32 @@ class SemanticSearch extends SimSageCommon {
                     'sourceId': source_id,
                 };
 
-                // construct a client query (OpsModels.ClientQuery)
-                this.send_message("/ws/ops/query", clientQuery);
+                jQuery.ajax({
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'API-Version': ui_settings.api_version,
+                    },
+                    'data': JSON.stringify(clientQuery),
+                    'type': 'POST',
+                    'url': url,
+                    'dataType': 'json',
+                    'success': function (data) {
+                        self.receive_ws_data(data);
+                    }
+
+                }).fail(function (err) {
+                    console.error(JSON.stringify(err));
+                    if (err && err["readyState"] === 0 && err["status"] === 0) {
+                        self.error = "Server not responding, not connected.";
+                    } else {
+                        self.error = err;
+                    }
+                    self.busy = false;
+                    self.refresh();
+                });
+
                 this.refresh();
+
             } else {
                 this.error = "Please enter a query to start searching.";
                 this.refresh();
@@ -126,7 +155,7 @@ class SemanticSearch extends SimSageCommon {
 
     // correct the spelling
     correct_spelling(text) {
-        $("#txtSearch").val(text);
+        document.getElementById("txtSearch").value = text;
         this.bot_text = '';
         this.bot_buttons = [];
         this.do_semantic_search(text);
@@ -136,17 +165,6 @@ class SemanticSearch extends SimSageCommon {
         this.bot_text = '';
         this.bot_buttons = [];
         this.refresh();
-    }
-
-    render_buttons() {
-        if (this.bot_buttons.length > 0) {
-            const list = [];
-            for (const button of this.bot_buttons) {
-                list.push(render_button(button.text, button.action));
-            }
-            return list.join("\n");
-        }
-        return "";
     }
 
     visit(url) {
@@ -182,7 +200,7 @@ class SemanticSearch extends SimSageCommon {
                 return name;
             }
         }
-        return "no name";
+        return url;
     }
 
     // overwrite: generic web socket receiver
@@ -190,13 +208,17 @@ class SemanticSearch extends SimSageCommon {
         this.busy = false;
         if (data) {
             if (data.messageType === mt_Error && data.error.length > 0) {
+                this.searching = false;
                 this.error = data.error;  // set an error
                 this.refresh();
 
             } else if (data.messageType === mt_Disconnect) {
+                this.searching = false;
+                this.assignedOperatorId = ''; // disconnect any operator
                 this.refresh();
 
             } else if (data.messageType === mt_SignIn) {
+                this.searching = false;
                 if (data.errorMessage && data.errorMessage.length > 0) {
                     this.error = data.errorMessage;  // set an error
                     this.signed_in = false;
@@ -207,8 +229,12 @@ class SemanticSearch extends SimSageCommon {
                 }
                 this.refresh();
 
+            } else if (data.messageType === mt_IsTyping) {
+                this.isTyping(data.fromIsTyping);
+
             } else if (data.messageType === mt_SpellingSuggest) {
                 // speech bubble popup with actions
+                this.searching = false;
                 this.bot_text = "Did you mean: " + data.text;
                 this.bot_buttons = [];
                 this.bot_buttons.push({text: "yes", action: 'search.correct_spelling("' + data.text + '");'});
@@ -218,6 +244,7 @@ class SemanticSearch extends SimSageCommon {
 
             } else if (data.messageType === mt_SignOut) {
 
+                this.searching = false;
                 if (data.errorMessage && data.errorMessage.length > 0) {
                     this.error = data.errorMessage;  // set an error
                 } else {
@@ -232,11 +259,17 @@ class SemanticSearch extends SimSageCommon {
 
                 const self = this;
                 this.bot_text = '';
+                this.is_typing = false;
                 this.semantic_search_results = [];
                 this.semantic_search_result_map = {};
                 this.semantic_set = {};
-                this.context_stack = [];
+                this.context_stack = []; // includes syn_sets of selected_syn_sets
                 this.bot_buttons = [];
+                // set the assigned operator
+                this.assignedOperatorId = data.assignedOperatorId;
+                if (this.assignedOperatorId == null) { // compatibility with older versions of SimSage
+                    this.assignedOperatorId = '';
+                }
 
                 // did we get semantic search results?
                 if (data.resultList) {
@@ -269,11 +302,48 @@ class SemanticSearch extends SimSageCommon {
                     this.bot_text = data.text;
                     if (data.urlList && data.urlList.length > 0) {
                         for (const url of data.urlList) {
-                            for (const sub_url of url.split(' ')) {
-                                this.bot_buttons.push({
-                                    text: this.get_url_name(sub_url),
-                                    action: 'search.visit("' + sub_url + '");'
-                                });
+                            if (url.trim().length > 0) {
+                                for (const sub_url of url.split(' ')) {
+                                    const url_name = this.get_url_name(sub_url);
+                                    this.bot_buttons.push({
+                                        text: url_name,
+                                        action: 'search.visit("' + sub_url + '");'
+                                    });
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // no bot results - can we ask about a syn-set not yet seen / selected?
+                    if (Array.isArray(this.context_stack)) {
+                        for (const context_item of this.context_stack) {
+                            const syn_set = SimSageCommon.getSynSet(context_item);
+                            const search_words = {};
+                            const search_word_list = SimSageCommon.getUniqueWordsAsList(this.search_query);
+                            for (const search_word of search_word_list) {
+                                search_words[search_word.toLowerCase()] = 1;
+                            }
+                            if (syn_set) {
+                                const word = syn_set["word"];
+                                const clouds = syn_set["clouds"];
+                                if (!this.syn_sets_seen[word] && clouds.length > 1 && search_words[word]) {
+                                    // add a question for the bot
+                                    this.bot_text = "What type of <b>" + word + "</b> are you looking for?";
+                                    this.bot_buttons = [];
+                                    for (const i in clouds) {
+                                        if (clouds.hasOwnProperty(i)) {
+                                            this.bot_buttons.push({
+                                                text: clouds[i],
+                                                action: 'search.select_syn_set("' + word + '", ' + i + ');'
+                                            });
+                                        }
+                                    }
+                                    this.bot_buttons.push({
+                                        text: "all",
+                                        action: 'search.select_syn_set("' + word + '", -1);'
+                                    });
+                                    break;
+                                }
                             }
                         }
                     }
@@ -312,8 +382,9 @@ class SemanticSearch extends SimSageCommon {
     }
 
     send_email() {
-        let emailAddress = $("#email").val();
+        let emailAddress = document.getElementById("email").value;
         if (emailAddress && emailAddress.length > 0 && emailAddress.indexOf("@") > 0) {
+            this.searching = false;  // we're not performing a search
             this.stompClient.send("/ws/ops/email", {},
                 JSON.stringify({
                     'messageType': mt_Email,
@@ -323,7 +394,6 @@ class SemanticSearch extends SimSageCommon {
                     'emailAddress': emailAddress,
                 }));
             this.error = '';
-            this.has_result = false;
             this.knowEmail = true;
             this.refresh();
         }
@@ -342,6 +412,7 @@ class SemanticSearch extends SimSageCommon {
     // do the actual sign-in
     sign_in(user_name, password) {
         if (user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
+            this.searching = false;  // we're not performing a search
             this.stompClient.send("/ws/ops/ad/sign-in", {},
                 JSON.stringify({
                     'organisationId': settings.organisationId,
@@ -352,12 +423,12 @@ class SemanticSearch extends SimSageCommon {
                     'password': password,
                 }));
             this.error = '';
-            this.has_result = false;
             this.refresh();
         }
     }
 
     sign_out() {
+        this.searching = false;  // we're not performing a search
         this.stompClient.send("/ws/ops/ad/sign-out", {},
             JSON.stringify({
                 'organisationId': settings.organisationId,
@@ -366,23 +437,50 @@ class SemanticSearch extends SimSageCommon {
                 'domainId': this.domainId,
             }));
         this.error = '';
-        this.has_result = false;
         this.refresh();
     }
 
     // sign-in or out
     show_sign_in() {
-        if (this.session_id === '') {
-            this.show_signin = true;
+        this.searching = false;  // we're not performing a search
+        const office365Domain = this.getAADDomain();
+        if (office365Domain) {
+            const user = SimSageCommon.getOffice365User();
+            if (!user) {
+                // do we already have the code to sign-in?
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                if (!code) {
+                    window.location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=' +
+                        office365Domain.clientId + '&response_type=code&redirect_uri=' +
+                        encodeURIComponent(office365Domain.redirectUrl) + '&scope=User.ReadBasic.All+offline_access+openid+profile' +
+                        '&state=' + SemanticSearch.getClientId();
+                } else {
+                    // login this user, using the code
+                    this.setup_office_365_user();
+                }
+            } else {
+                // we have a user - assume the client wants to sign-out
+                SimSageCommon.removeOffice365User();
+                this.signed_in = false;
+                this.error = '';
+                this.refresh();
+            }
+
         } else {
-            // do a sign-out
-            this.show_signin = false;
-            this.session_id = '';
+            if (this.session_id === '') {
+                this.show_signin = true;
+            } else {
+                // do a sign-out
+                this.show_signin = false;
+                this.session_id = '';
+            }
+            this.refresh();
         }
-        this.refresh();
     }
 
     close_sign_in() {
+        this.searching = false;  // we're not performing a search
         this.show_signin = false;
         this.refresh();
     }
@@ -392,6 +490,7 @@ class SemanticSearch extends SimSageCommon {
 
     // hide the bot response
     hide_speech_bubble() {
+        this.searching = false;  // we're not performing a search
         this.bubble_visible = false;
         this.refresh();
     }
@@ -451,22 +550,15 @@ class SemanticSearch extends SimSageCommon {
 
     // remove duplicate strings from body search text and add synset items
     process_body_string(text) {
-        const parts = text.split(" ");
+        const parts = SimSageCommon.getUniqueWordsAsList(text);
         const newList = [];
-        const duplicates = {};
         for (const _part of parts) {
             const part = _part.trim().toLowerCase();
-            if (part.length > 0) {
-                if (!duplicates.hasOwnProperty(part)) {
-                    duplicates[part] = 1;
-
-                    const synSet = this.selected_syn_sets[part];
-                    if (typeof synSet !== 'undefined' && parseInt(synSet) >= 0) {
-                        newList.push(_part.trim() + '/' + synSet);
-                    } else {
-                        newList.push(_part.trim());
-                    }
-                }
+            const synSet = this.selected_syn_sets[part];
+            if (typeof synSet !== 'undefined' && parseInt(synSet) >= 0) {
+                newList.push(_part.trim() + '/' + synSet);
+            } else {
+                newList.push(_part.trim());
             }
         }
         return newList.join(" ");
@@ -553,8 +645,8 @@ class SemanticSearch extends SimSageCommon {
 
     // select a semantic category item and modify the query string accordingly
     select_semantic(semantic_item, search_text_id) {
-        const search_ctrl = $('#' + search_text_id);
-        let text_list = search_ctrl.val().split(' ');
+        const search_ctrl = document.getElementById(search_text_id);
+        let text_list = search_ctrl.value.split(' ');
         let found = false;
         for (const item of text_list) {
             if (item.toLowerCase() === semantic_item.toLowerCase()) {
@@ -577,7 +669,7 @@ class SemanticSearch extends SimSageCommon {
             }
             new_text_list.push(semantic_item);
         }
-        search_ctrl.val(SemanticSearch.join(new_text_list));
+        search_ctrl.value = SemanticSearch.join(new_text_list);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -586,6 +678,10 @@ class SemanticSearch extends SimSageCommon {
     // select a syn-set
     select_syn_set(word, value) {
         this.selected_syn_sets[word.toLowerCase().trim()] = value;
+        this.syn_sets_seen[word.toLowerCase().trim()] = 1; // mark it as 'seen' and done
+        this.bot_text = "";
+        this.bot_buttons = [];
+        this.do_semantic_search(this.search_query);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -622,6 +718,12 @@ class SemanticSearch extends SimSageCommon {
             return html_list.join('\n');
         }
         return "";
+    }
+
+    // do we have any results to display?
+    get_has_results() {
+        const num_results = this.semantic_search_results.length;
+        return (this.kb && this.kb.id && (num_results > 0 || this.bot_text.length > 0));
     }
 
     // show advanced filter menu

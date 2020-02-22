@@ -146,6 +146,35 @@ a:active {
 	color: #fff;
 }
 
+.operator-button-box {
+	float: left;
+	margin-left: 10px;
+	padding: 6px;
+	background: #557;
+	width: 54px;
+	height: 54px;
+	cursor: pointer;
+	border-radius: 50%;
+}
+
+.operator-button-box-connected {
+	float: left;
+	margin-left: 10px;
+	padding: 6px;
+	background: #c55;
+	width: 54px;
+	height: 54px;
+	cursor: pointer;
+	border-radius: 50%;
+}
+
+.operator-image {
+	margin-left: 4px;
+	margin-top: 8px;
+	width: 34px;
+	color: #fff;
+}
+
 
 /****** advanced search ******/
 
@@ -282,15 +311,6 @@ a:active {
 
 .spacer {
 	height: 10px;
-}
-
-.context-dd {
-	display: inline-block;
-	margin-left: 4px;
-	margin-right: 4px;
-	color: #757da0;
-	font-size: 0.8em;
-	cursor: pointer;
 }
 
 /****** search result container ******/
@@ -722,13 +742,11 @@ a:active {
 
 .signed-in-view-type {
 	float: left;
-	animation: pulse 5s infinite;
 	margin-right: 4px;
-	background-image: url(../images/signin.svg);
+	background-image: url(../images/signout.svg);
 	background-size: contain;
 	width: 24px;
 	height: 24px;
-	border-radius: 50%;
 }
 
 @keyframes pulse {
@@ -992,10 +1010,11 @@ a:active {
 
 .bot-button {
 	float: left;
-	padding: 5px;
 	border-radius: 2px;
 	background: #f5a623;
 	box-shadow: -2px 0 2px 1px #aaaaaa;
+	padding: 4px 2px 2px;
+	color: #333;
 	margin-right: 10px;
 	margin-bottom: 5px;
 	width: 100px;
@@ -1003,3 +1022,24 @@ a:active {
 	cursor: pointer;
 }
 
+.busy-image-container {
+	margin-left: 20px;
+	width: 60px;
+}
+
+.busy-image {
+	width: 60px;
+}
+
+.synset-selector {
+	padding: 4px;
+	display: inline-block;
+	margin-left: 4px;
+	margin-right: 8px;
+	color: #757da0;
+	background-color: #eee;
+	font-size: 0.8em;
+	cursor: pointer;
+	border: 0;
+	line-height: 20px;
+}
