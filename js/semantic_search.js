@@ -173,36 +173,6 @@ class SemanticSearch extends SimSageCommon {
         }
     }
 
-    // get a name from a url
-    get_url_name(url) {
-        if (url && url.length > 0) {
-            const i1 = url.lastIndexOf('/');
-            if (i1 > 0) {
-                const name = url.substring(i1 + 1).trim();
-                if (name.length === 0) {
-                    const strip_list = ["http://www.", "https://www.", "http://", "https://"];
-                    for (const strip of strip_list) {
-                        if (url.startsWith(strip)) {
-                            const subName = url.substring(strip.length);
-                            const i2 = subName.indexOf('.');
-                            if (i2 > 0) {
-                                return subName.substring(0, i2);
-                            }
-                            return name;
-                        }
-                    }
-                    return name;
-                }
-                const i2 = name.indexOf('.');
-                if (i2 > 0) {
-                    return name.substring(0, i2);
-                }
-                return name;
-            }
-        }
-        return url;
-    }
-
     // overwrite: generic web socket receiver
     receive_ws_data(data) {
         this.busy = false;
@@ -304,7 +274,7 @@ class SemanticSearch extends SimSageCommon {
                         for (const url of data.urlList) {
                             if (url.trim().length > 0) {
                                 for (const sub_url of url.split(' ')) {
-                                    const url_name = this.get_url_name(sub_url);
+                                    const url_name = SimSageCommon.get_url_name(sub_url);
                                     this.bot_buttons.push({
                                         text: url_name,
                                         action: 'search.visit("' + sub_url + '");'
@@ -427,25 +397,12 @@ class SemanticSearch extends SimSageCommon {
         }
     }
 
-    sign_out() {
-        this.searching = false;  // we're not performing a search
-        this.stompClient.send("/ws/ops/ad/sign-out", {},
-            JSON.stringify({
-                'organisationId': settings.organisationId,
-                'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
-                'clientId': SemanticSearch.getClientId(),
-                'domainId': this.domainId,
-            }));
-        this.error = '';
-        this.refresh();
-    }
-
     // sign-in or out
     show_sign_in() {
         this.searching = false;  // we're not performing a search
         const office365Domain = this.getAADDomain();
         if (office365Domain) {
-            const user = SimSageCommon.getOffice365User();
+            const user = this.getOffice365User();
             if (!user) {
                 // do we already have the code to sign-in?
                 const urlParams = new URLSearchParams(window.location.search);
@@ -461,7 +418,7 @@ class SemanticSearch extends SimSageCommon {
                 }
             } else {
                 // we have a user - assume the client wants to sign-out
-                SimSageCommon.removeOffice365User();
+                this.removeOffice365User();
                 this.signed_in = false;
                 this.error = '';
                 this.refresh();

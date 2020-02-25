@@ -146,7 +146,7 @@ function update_ui(search) {
             if (search.signed_in) {
                 sign_in_section.removeClass("sign-in-view-type");
                 sign_in_section.addClass("signed-in-view-type");
-                const user = SimSageCommon.getOffice365User();
+                const user = this.getOffice365User();
                 if (user) {
                     const title = 'sign-out ' + user.name;
                     sign_in_section.attr('title', title);

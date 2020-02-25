@@ -39,4 +39,6 @@ ui_settings = {
     use_spelling_suggest: true,
     // show the advanced filter menu?
     show_advanced_filter: true,
+    // image types for link name display
+    image_types: [".jpg", ".jpeg", ".png", ".gif", ".svg"],
 };

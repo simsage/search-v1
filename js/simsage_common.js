@@ -1,4 +1,7 @@
 
+// timeout for office 365 sessions
+const session_timeout_in_mins = 59;
+
 //
 // manage a SimSage connection
 //
@@ -216,7 +219,9 @@ class SimSageCommon {
         const self = this;
         const kb_list = [];
         for (const kb of this.kb_list) {
-            kb_list.push({"kbId": kb.id, "sid": kb.sid});
+            if (this.kb && this.kb.id === kb.id) { // filter on selected kb
+                kb_list.push({"kbId": kb.id, "sid": kb.sid});
+            }
         }
         const data = {
             "organisationId": settings.organisationId,
@@ -295,6 +300,19 @@ class SimSageCommon {
         }
     }
 
+    sign_out() {
+        this.searching = false;  // we're not performing a search
+        this.stompClient.send("/ws/ops/ad/sign-out", {},
+            JSON.stringify({
+                'organisationId': settings.organisationId,
+                'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                'clientId': SemanticSearch.getClientId(),
+                'domainId': this.domainId,
+            }));
+        this.error = '';
+        this.refresh();
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////
     // static helpers
 
@@ -341,7 +359,7 @@ class SimSageCommon {
      * setup the office 365 user if they don't exist yet, and we have a code
      */
     setup_office_365_user() {
-        const user = SimSageCommon.getOffice365User(); // do we have an office 365 user object?
+        const user = this.getOffice365User(); // do we have an office 365 user object?
         if (!user) { // no?
             const domain = this.getAADDomain(); // make sure we have a domain to go to
             if (domain) {
@@ -351,10 +369,14 @@ class SimSageCommon {
                     this.searching = false;  // we're not performing a search
                     const url = settings.base_url + '/auth/sign-in/office365';
                     const self = this;
+                    const kbList = [];
+                    for (const item of this.kb_list) {
+                        kbList.push({"kbId": item.id, "sid": item.sid});
+                    }
                     // use this code to now sign-in and get the user's details
                     const data = {"code": code, "redirectUrl": encodeURIComponent(domain.redirectUrl),
                                   "clientId": SimSageCommon.getClientId(), "msClientId": domain.clientId,
-                                  "organisationId": settings.organisationId, "kbId": domain.kbId
+                                  "organisationId": settings.organisationId, "kbList": kbList
                     };
                     jQuery.ajax({
                         headers: {
@@ -368,7 +390,7 @@ class SimSageCommon {
                         'url': url,
                         'success': function (data) {
                             const signedInUSer = {"name": data.displayName, "email": data.email};
-                            SimSageCommon.setOffice365User(signedInUSer);
+                            self.setOffice365User(signedInUSer);
                             window.location.href = domain.redirectUrl;
                             self.signed_in = true;
                             self.refresh();
@@ -390,31 +412,58 @@ class SimSageCommon {
     }
 
     // get the existing office 365 user (or null)
-    static getOffice365User() {
+    getOffice365User() {
         const key = 'simsearch_office_365_user';
         const hasLs = SimSageCommon.hasLocalStorage();
         if (hasLs) {
-            return JSON.parse(localStorage.getItem(key));
+            let data = JSON.parse(localStorage.getItem(key));
+            const now = new Date().getTime();
+            if (data && data.expiry && now < data.expiry) {
+                const to = session_timeout_in_mins * 60000;
+                data.expiry = now + to; // 1 hour timeout
+                this.setOffice365User(data);
+                return data;
+            } else {
+                // expired
+                this.removeOffice365User();
+            }
         }
         return null;
     }
 
     // get or create a session based client id for SimSage usage
-    static setOffice365User(data) {
+    setOffice365User(data) {
         const key = 'simsearch_office_365_user';
         const hasLs = SimSageCommon.hasLocalStorage();
         if (hasLs) {
+            const to = session_timeout_in_mins * 60000;
+            data.expiry = new Date().getTime() + to; // 1 hour timeout
             localStorage.setItem(key, JSON.stringify(data));
         }
     }
 
     // get or create a session based client id for SimSage usage
-    static removeOffice365User() {
+    removeOffice365User() {
         const key = 'simsearch_office_365_user';
         const hasLs = SimSageCommon.hasLocalStorage();
         if (hasLs) {
             localStorage.removeItem(key);
         }
+    }
+
+    // get a name from a url, either 'link' or 'image'
+    static get_url_name(url) {
+        if (url && url.length > 0) {
+            // image or page?
+            const name = url.toLowerCase().trim();
+            for (const image_extn of ui_settings.image_types) {
+                if (name.endsWith(image_extn)) {
+                    return "image";
+                }
+            }
+            return "link";
+        }
+        return "";
     }
 
     // clear a session
@@ -423,6 +472,7 @@ class SimSageCommon {
         const hasLs = SimSageCommon.hasLocalStorage();
         if (hasLs) {
             localStorage.removeItem(key);
+            this.sign_out();
             return true;
         }
         return false;
