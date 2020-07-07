@@ -148,30 +148,32 @@ a:active {
 
 .operator-button-box {
 	float: left;
-	margin-left: 10px;
-	padding: 6px;
+	margin-top: 4px;
+	margin-left: 6px;
+	padding: 2px;
 	background: #557;
-	width: 54px;
-	height: 54px;
+	width: 44px;
+	height: 44px;
 	cursor: pointer;
 	border-radius: 50%;
 }
 
 .operator-button-box-connected {
 	float: left;
-	margin-left: 10px;
-	padding: 6px;
+	margin-top: 4px;
+	margin-left: 6px;
+	padding: 2px;
 	background: #c55;
-	width: 54px;
-	height: 54px;
+	width: 44px;
+	height: 44px;
 	cursor: pointer;
 	border-radius: 50%;
 }
 
 .operator-image {
-	margin-left: 4px;
-	margin-top: 8px;
-	width: 34px;
+	margin-left: 2px;
+	margin-top: 10px;
+	width: 24px;
 	color: #fff;
 }
 
@@ -601,6 +603,8 @@ a:active {
 	background-color: #d7dade;
 	width: 500px;
 	height: 70vh;
+	max-height: 70vh;
+	overflow: auto;
 	padding: 10px;
 	border-radius: 2px;
 }
@@ -837,6 +841,18 @@ a:active {
 	margin-bottom:10px;
 	opacity: 0.8;
     margin-right: 10px;
+}
+
+.sign-in-btn-busy {
+	background-color: #aaa;
+	color: white;
+	padding: 16px 20px;
+	border: none;
+	cursor: wait;
+	width: 40%;
+	margin-bottom:10px;
+	opacity: 0.8;
+	margin-right: 10px;
 }
 
 .sign-in-btn:hover {

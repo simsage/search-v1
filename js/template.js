@@ -215,27 +215,28 @@ function render_rhs_containers(context_stack, selected_syn_sets, semantic_set) {
 
 function render_semantics(semantic_set) {
     const result = [];
-    const key_list = ['People and Groups', 'Places and Locations', 'Email Addresses', 'Monetary Amounts', 'URLs',
-                      'Phone Numbers', 'Date and Time', 'Numbers'];
-    if (key_list.length > 0) {
-        for (const key of key_list) {
-            result.push('<div class="semantic-entry">');
-            result.push('<div class="semantic-title">' + key + '</div>');
-            if (semantic_set.hasOwnProperty(key)) {
-                const item_list = semantic_set[key];
-                if (item_list.length > 0) {
-                    for (const item of item_list) {
-                        let count = '';
-                        if (item.frequency > 1) {
-                            count += ' (' + item.frequency + ')';
-                        }
-                        result.push('<div class="semantic-text" title="' + item.word + count + '" onclick="search.select_semantic(\'' + item.word + '\', \'txtSearch\')">');
-                        result.push(adjust_size(item.word, 20) + count + '</div>');
+    const key_list = [];
+    for (const key in semantic_set) {
+        key_list.push(key);
+    }
+    key_list.sort();
+    for (const key of key_list) {
+        result.push('<div class="semantic-entry">');
+        result.push('<div class="semantic-title">' + key + '</div>');
+        if (semantic_set.hasOwnProperty(key)) {
+            const item_list = semantic_set[key];
+            if (item_list.length > 0) {
+                for (const item of item_list) {
+                    let count = '';
+                    if (item.frequency > 1) {
+                        count += ' (' + item.frequency + ')';
                     }
+                    result.push('<div class="semantic-text" title="' + item.word + count + '" onclick="search.select_semantic(\'' + item.word + '\', \'txtSearch\')">');
+                    result.push(adjust_size(item.word, 20) + count + '</div>');
                 }
             }
-            result.push('</div>');
         }
+        result.push('</div>');
     }
     return result.join('\n');
 }
@@ -349,7 +350,22 @@ function render_details(system_url, organisation_id, kb_id, url_id, document, te
                             <div class="details-item">\
                               <div class="details-label">word count</div>\
                               <div class="details-label-text">{num_words}</div>\
-                            </div>\
+                            </div>';
+
+    for (const key in document.metadata) {
+        // check if the property/key is defined in the object itself, not in parent
+        if (key.indexOf('{') === -1 && document.metadata.hasOwnProperty(key)) {
+            const value = document.metadata[key];
+            if (value.indexOf("<") === -1) { // no tags or anything allowed - don't render
+                result_str += ' <div class="details-item"> \
+                              <div class="details-label" title="' + key + '">' + adjust_size(key, 14) + '</div> \
+                              <div class="details-label-text" title="' + value + '">' + adjust_size(value, 32) + '</div> \
+                            </div>';
+            }
+        }
+    }
+
+    result_str += '\
                             <div class="details-item">\
                               <div class="details-label">search query</div>\
                               <div class="details-label-text">{query}</div>\
@@ -362,8 +378,8 @@ function render_details(system_url, organisation_id, kb_id, url_id, document, te
                             <img src="{image_url}" alt="page preview" class="details-preview-image" title="page preview" />\
                           </div>\
                         </div>\
-                        <div class="details-navigation"></div>\
-    ';
+                        <div class="details-navigation"></div>';
+
     return result_str
         .replace(/{title}/g, adjust_size(document.title, 50))
         .replace(/{text}/g, text)

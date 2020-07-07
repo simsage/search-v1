@@ -21,12 +21,13 @@ class SimSageCommon {
         // kb information
         this.kb_list = [];
         this.kb = null;
-        this.domainId = ''; // the selected domain
+        this.sourceId = 0; // the selected domain
         this.is_typing = false; // are we receiving a "typing" message?
         this.typing_last_seen = 0; // last time
         // assigned operator
         this.assignedOperatorId = '';
         this.signed_in = false;
+        this.signing_in = false;
     }
 
     // do nothing - overwritten
@@ -39,11 +40,11 @@ class SimSageCommon {
         const now = SimSageCommon.getSystemTime();
         if (isTyping) {
             this.typing_last_seen = now + 2000;
-            if (!this.is_typing) {
+            if (!this.is_typing && isTyping) {
                 this.is_typing = isTyping;
                 this.refresh();
             }
-        } else if (this.typing_last_seen < now) {
+        } else if (this.typing_last_seen < now  && this.is_typing) {
             this.is_typing = false;
             this.refresh();
         }
@@ -128,19 +129,38 @@ class SimSageCommon {
 
     // return a list of domains (or empty list) for the selected kb
     getDomainListForCurrentKB() {
-        if (this.kb && this.kb.domainList) {
-            return this.kb.domainList;
+        if (this.kb && this.kb.sourceList) {
+            const list = [];
+            for (const source of this.kb.sourceList) {
+                if (source && source.domainType && source.domainType.length > 0) {
+                    list.push(source);
+                }
+            }
+            return list;
         }
         return [];
     }
 
     // get the first (and for now the only) AAD domain you can find - or return null
     getAADDomain() {
-        if (this.kb && this.kb.domainList) {
-            for (const domain of this.kb.domainList) {
+        if (this.kb && this.kb.sourceList) {
+            for (const domain of this.kb.sourceList) {
                 if (domain.domainType === 'aad') {
                     domain.kbId = this.kb.id;
                     return domain;
+                }
+            }
+        }
+        return null;
+    }
+
+    // get selected domain - or return null
+    getSelectedDomain() {
+        if (this.kb && this.kb.sourceList) {
+            for (let source of this.kb.sourceList) {
+                if (source.sourceId == this.sourceId) {
+                    source.kbId = this.kb.id;
+                    return source;
                 }
             }
         }
@@ -153,14 +173,56 @@ class SimSageCommon {
         let html_str = "";
         const domain_list = this.getDomainListForCurrentKB();
         for (const domain of domain_list) {
+            let domainType = "";
             if (domain.domainType === 'ad') {
-                html_str += "<option value='" + domain.domainId + "'>" + domain.name + "</option>";
+                domainType = " (Active Directory)";
+            } else if (domain.domainType === 'aad') {
+                domainType = " (Office 365)";
+            } else if (domain.domainType === 'simsage') {
+                domainType = " (SimSage)";
+            }
+            if (domainType.length > 0) {
+                html_str += "<option value='" + domain.sourceId + "'>" + domain.name + domainType + "</option>";
             }
         }
         if (domain_list.length > 0) {
-            this.domainId = domain_list[0].domainId;
+            this.sourceId = domain_list[0].sourceId;
         }
         ctrl.innerHTML = html_str;
+    }
+
+    // user changes the selected domain, return true if this domain requires a redirect authentication
+    change_domain() {
+        const ctrl = document.getElementById("ddDomain");
+        this.sourceId = ctrl.value;
+
+        // what type of domain is this?
+        let domainType = "";
+        const domain_list = this.getDomainListForCurrentKB();
+        for (const domain of domain_list) {
+            if (domain.sourceId == this.sourceId) {
+                domainType = domain.domainType;
+                break;
+            }
+        }
+
+        const div_email = document.getElementById("divEmail");
+        const div_password = document.getElementById("divPassword");
+        const txt_email = document.getElementById("txtEmail");
+
+        if (domainType === "aad") { // office365
+            div_email.style.display = "none";
+            div_password.style.display = "none";
+        } else {
+            div_email.style.display = "";
+            div_password.style.display = "";
+            if (domainType === "simsage") {
+                txt_email.placeholder = 'SimSage username';
+            } else {
+                txt_email.placeholder = 'Active-Directory username';
+            }
+            txt_email.focus();
+        }
     }
 
     // get the knowledge-base information for this organisation (set in settings.js)
@@ -192,6 +254,10 @@ class SimSageCommon {
                 self.error = "";
                 self.connection_retry_count = 1;
                 self.busy = false;
+
+                // setup any potential domains
+                self.change_domain();
+
                 self.refresh();
 
                 // setup is-typing check
@@ -300,14 +366,57 @@ class SimSageCommon {
         }
     }
 
+    // do the actual sign-in
+    sign_in(user_name, password) {
+        const domain = this.getSelectedDomain();
+        if (domain && domain.domainType === 'aad') { // azure ad
+            const user = this.getOffice365User();
+            if (!user) {
+                // do we already have the code to sign-in?
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                if (!code) {
+                    window.location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=' +
+                        domain.clientId + '&response_type=code&redirect_uri=' +
+                        encodeURIComponent(domain.redirectUrl) + '&scope=User.ReadBasic.All+offline_access+openid+profile' +
+                        '&state=' + SemanticSearch.getClientId();
+                } else {
+                    // login this user, using the code
+                    this.setup_office_365_user();
+                }
+            } else {
+                // we have a user - assume the client wants to sign-out
+                this.removeOffice365User();
+                this.signed_in = false;
+                this.error = '';
+                this.refresh();
+            }
+        } else if (domain && user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
+            this.searching = false;  // we're not performing a search
+            this.signing_in = true;  // we've started the process
+            this.stompClient.send("/ws/ops/ad/sign-in", {},
+                JSON.stringify({
+                    'organisationId': settings.organisationId,
+                    'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                    'clientId': SemanticSearch.getClientId(),
+                    'sourceId': this.sourceId,
+                    'userName': user_name,
+                    'password': password,
+                }));
+            this.error = '';
+            this.refresh();
+        }
+    }
+
     sign_out() {
         this.searching = false;  // we're not performing a search
+        this.removeOffice365User();
         this.stompClient.send("/ws/ops/ad/sign-out", {},
             JSON.stringify({
                 'organisationId': settings.organisationId,
                 'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
                 'clientId': SemanticSearch.getClientId(),
-                'domainId': this.domainId,
+                'sourceId': this.sourceId,
             }));
         this.error = '';
         this.refresh();

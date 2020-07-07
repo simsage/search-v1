@@ -86,6 +86,7 @@ class SemanticSearch extends SimSageCommon {
                 this.searching = true;  // we're searching!
                 this.search_query = text;
                 this.show_advanced_search = false;
+                this.show_details = false;
                 this.busy = true;
                 let source_id = '';
                 if (this.source !== null) {
@@ -108,6 +109,8 @@ class SemanticSearch extends SimSageCommon {
                     'maxWordDistance': ui_settings.max_word_distance,
                     'searchThreshold': ui_settings.score_threshold,
                     'spellingSuggest': ui_settings.use_spelling_suggest,
+                    'contextLabel': ui_settings.context_label,
+                    'contextMatchBoost': ui_settings.context_match_boost,
                     'sourceId': source_id,
                 };
 
@@ -189,6 +192,7 @@ class SemanticSearch extends SimSageCommon {
 
             } else if (data.messageType === mt_SignIn) {
                 this.searching = false;
+                this.signing_in = false;
                 if (data.errorMessage && data.errorMessage.length > 0) {
                     this.error = data.errorMessage;  // set an error
                     this.signed_in = false;
@@ -251,7 +255,11 @@ class SemanticSearch extends SimSageCommon {
 
                         if (!sr.botResult) {
                             // enhance search result for display
-                            sr['index'] = 0;  // inner offset index
+                            if (sr.textIndex >= 0 && sr.textIndex < sr.textList.length) {
+                                sr['index'] = sr.textIndex;  // inner offset index
+                            } else {
+                                sr['index'] = 0;  // inner offset index
+                            }
                             sr['num_results'] = sr.textList.length;
                             self.semantic_search_results.push(sr);  // add item
                             self.semantic_search_result_map[sr.url] = sr;
@@ -379,61 +387,17 @@ class SemanticSearch extends SimSageCommon {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // sign in system
 
-    // do the actual sign-in
-    sign_in(user_name, password) {
-        if (user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
-            this.searching = false;  // we're not performing a search
-            this.stompClient.send("/ws/ops/ad/sign-in", {},
-                JSON.stringify({
-                    'organisationId': settings.organisationId,
-                    'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
-                    'clientId': SemanticSearch.getClientId(),
-                    'domainId': this.domainId,
-                    'userName': user_name,
-                    'password': password,
-                }));
-            this.error = '';
-            this.refresh();
-        }
-    }
-
     // sign-in or out
     show_sign_in() {
         this.searching = false;  // we're not performing a search
-        const office365Domain = this.getAADDomain();
-        if (office365Domain) {
-            const user = this.getOffice365User();
-            if (!user) {
-                // do we already have the code to sign-in?
-                const urlParams = new URLSearchParams(window.location.search);
-                const code = urlParams.get('code');
-                if (!code) {
-                    window.location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=' +
-                        office365Domain.clientId + '&response_type=code&redirect_uri=' +
-                        encodeURIComponent(office365Domain.redirectUrl) + '&scope=User.ReadBasic.All+offline_access+openid+profile' +
-                        '&state=' + SemanticSearch.getClientId();
-                } else {
-                    // login this user, using the code
-                    this.setup_office_365_user();
-                }
-            } else {
-                // we have a user - assume the client wants to sign-out
-                this.removeOffice365User();
-                this.signed_in = false;
-                this.error = '';
-                this.refresh();
-            }
-
+        if (this.session_id === '') {
+            this.show_signin = true;
         } else {
-            if (this.session_id === '') {
-                this.show_signin = true;
-            } else {
-                // do a sign-out
-                this.show_signin = false;
-                this.session_id = '';
-            }
-            this.refresh();
+            // do a sign-out
+            this.show_signin = false;
+            this.session_id = '';
         }
+        this.refresh();
     }
 
     close_sign_in() {
@@ -499,7 +463,6 @@ class SemanticSearch extends SimSageCommon {
             this.page = 0;  // reset to page 0
             this.shard_size_list = [];
         }
-        this.bot_url = '';
         this.bot_text = '';
         this.bubble_visible = true;
         this.semantic_search_results = [];
@@ -523,8 +486,7 @@ class SemanticSearch extends SimSageCommon {
 
     // clean text - remove characters we use for special purposes
     clean_query_text(text) {
-        // remove any / : ( ) characters from text first
-        text = text.replace(/\//g, ' ');
+        // remove any : ( ) characters from text first
         text = text.replace(/\)/g, ' ');
         text = text.replace(/\(/g, ' ');
         return text.replace(/:/g, ' ');
@@ -686,12 +648,14 @@ class SemanticSearch extends SimSageCommon {
     // show advanced filter menu
     toggle_advanced_search() {
         this.show_advanced_search = !this.show_advanced_search;
+        this.show_details = false;
         this.refresh();
     }
 
     // hide advanced filter menu
     hide_advanced_search() {
         this.show_advanced_search = false;
+        this.show_details = false;
         this.refresh();
     }
 
@@ -755,6 +719,7 @@ class SemanticSearch extends SimSageCommon {
         const text = SemanticSearch.highlight(document.textList[document.index]);
         this.details_html = render_details(base_url, organisation_id, kb_id, url_id, document, text, this.search_query);
         this.show_details = true;
+        this.show_advanced_search = false;
         this.refresh();
     }
 
@@ -762,6 +727,7 @@ class SemanticSearch extends SimSageCommon {
     closeDetails() {
         this.details_html = '';
         this.show_details = false;
+        this.show_advanced_search = false;
         this.refresh();
     }
 

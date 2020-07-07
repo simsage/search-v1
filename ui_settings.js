@@ -36,9 +36,14 @@ ui_settings = {
     no_email_message: "<b>No results found</b>",
 
     // correct typos?
-    use_spelling_suggest: true,
+    use_spelling_suggest: false,
     // show the advanced filter menu?
     show_advanced_filter: true,
     // image types for link name display
     image_types: [".jpg", ".jpeg", ".png", ".gif", ".svg"],
+
+    // context default (empty is not set / ignored)
+    context_label: '',
+    // how much to boost a context match by in percentage points
+    context_match_boost: 0.02,
 };

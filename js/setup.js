@@ -140,8 +140,7 @@ function update_ui(search) {
         }
 
         // sign in visible?
-        const office365Domain = search.getAADDomain();
-        if (search.getDomainListForCurrentKB().length > 0 || office365Domain) {
+        if (search.getDomainListForCurrentKB().length > 0) {
             sign_in_section.show();
             if (search.signed_in) {
                 sign_in_section.removeClass("sign-in-view-type");
@@ -157,6 +156,22 @@ function update_ui(search) {
                 sign_in_section.removeClass("signed-in-view-type");
                 sign_in_section.addClass("sign-in-view-type");
                 sign_in_section.attr('title', 'sign-in');
+            }
+            if (search.signing_in) {
+                // in the process of signing in?
+                $("input.sign-in-dlg").attr('disabled', 'true');
+                $("select.sign-in-dlg").attr('disabled', 'true');
+                const buttons = $("button.sign-in-dlg");
+                buttons.attr('disabled', 'true');
+                buttons.removeClass("sign-in-btn");
+                buttons.addClass("sign-in-btn-busy");
+            } else {
+                $("input.sign-in-dlg").removeAttr('disabled');
+                $("select.sign-in-dlg").removeAttr('disabled');
+                const buttons = $("button.sign-in-dlg");
+                buttons.removeAttr('disabled');
+                buttons.removeClass("sign-in-btn-busy");
+                buttons.addClass("sign-in-btn");
             }
         }
         // only show sign-in if setup, AND the selected kb has at least one domain available
@@ -272,10 +287,6 @@ function change_advanced_search() {
     } else {
         $(".advanced-search-tick").css("display", "none");
     }
-}
-
-function change_domain() {
-    search.domainId = dd_domain.val();
 }
 
 // load initial document settings from server

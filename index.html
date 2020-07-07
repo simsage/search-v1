@@ -126,22 +126,22 @@
 	<div id="divSignInDlg" class="sign-in-form-popup">
 		<h1 class="title">sign-in</h1>
 		<div id="divDomain" class="domain-container">
-			<label for="ddDomain"><b>Domain</b></label>
-			<select id="ddDomain" name="domain" class="domain-item-select" onchange="change_domain()">
+			<label for="ddDomain"><b>Source</b></label>
+			<select id="ddDomain" name="domain" class="domain-item-select sign-in-dlg" onchange="search.change_domain()">
 			</select>
 		</div>
 		<div id="divEmail">
 			<label for="txtEmail"><b>Login</b></label>
-			<input id="txtEmail" class="sign-in-email" type="text" title="your domain username" placeholder="Enter domain username" name="email" required>
+			<input id="txtEmail" class="sign-in-email sign-in-dlg" type="text" title="your domain username" placeholder="Active-Directory username" name="email" required>
 		</div>
 		<div id="divPassword">
 			<label for="txtPassword"><b>Password</b></label>
-			<input id="txtPassword" class="sign-in-password" title="your SimSage password" type="password" placeholder="Enter Password" name="psw" required>
+			<input id="txtPassword" class="sign-in-password sign-in-dlg" title="your SimSage password" type="password" placeholder="Enter Password" name="psw" required>
 		</div>
 		<div class="sign-in-button">
-			<button type="submit" class="sign-in-btn" title="click this button to sign-in after typing in your email and password."
+			<button type="submit" class="sign-in-btn sign-in-dlg" title="click this button to sign-in after typing in your email and password."
 					onclick="search.sign_in($('#txtEmail').val(), $('#txtPassword').val())">Sign-in</button>
-			<button type="submit" class="sign-in-btn sign-in-cancel" title="close the sign-in dialog box." onclick="search.close_sign_in()">Cancel</button>
+			<button type="submit" class="sign-in-cancel sign-in-btn sign-in-dlg" title="close the sign-in dialog box." onclick="search.close_sign_in()">Cancel</button>
 		</div>
 	</div>
 
