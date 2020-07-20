@@ -189,6 +189,10 @@ class SemanticSearch extends SimSageCommon {
                 this.assignedOperatorId = ''; // disconnect any operator
                 this.refresh();
 
+            } else if (data.messageType === mt_Email) {
+                this.knowEmail = true;
+                this.refresh();
+
             } else if (data.messageType === mt_SignIn) {
                 this.searching = false;
                 this.signing_in = false;
@@ -361,17 +365,40 @@ class SemanticSearch extends SimSageCommon {
     send_email() {
         let emailAddress = document.getElementById("email").value;
         if (emailAddress && emailAddress.length > 0 && emailAddress.indexOf("@") > 0) {
-            this.searching = false;  // we're not performing a search
-            this.stompClient.send("/ws/ops/email", {},
-                JSON.stringify({
-                    'messageType': mt_Email,
-                    'organisationId': settings.organisationId,
-                    'kbList': [this.kb.id],
-                    'clientId': SemanticSearch.getClientId(),
-                    'emailAddress': emailAddress,
-                }));
             this.error = '';
-            this.knowEmail = true;
+            const self = this;
+            const url = settings.base_url + '/ops/email';
+            this.searching = false;  // we're not performing a search
+            const emailMessage = {
+                'messageType': mt_Email,
+                'organisationId': settings.organisationId,
+                'kbList': [this.kb.id],
+                'clientId': SemanticSearch.getClientId(),
+                'emailAddress': emailAddress,
+            };
+            jQuery.ajax({
+                headers: {
+                    'Content-Type': 'application/json',
+                    'API-Version': ui_settings.api_version,
+                },
+                'data': JSON.stringify(emailMessage),
+                'type': 'POST',
+                'url': url,
+                'dataType': 'json',
+                'success': function (data) {
+                    self.receive_ws_data(data);
+                }
+
+            }).fail(function (err) {
+                console.error(JSON.stringify(err));
+                if (err && err["readyState"] === 0 && err["status"] === 0) {
+                    self.error = "Server not responding, not connected.";
+                } else {
+                    self.error = err;
+                }
+                self.busy = false;
+                self.refresh();
+            });
             this.refresh();
         }
     }

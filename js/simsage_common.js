@@ -53,12 +53,28 @@ class SimSageCommon {
     // the user of this search interface is typing
     clientIsTyping() {
         if (this.assignedOperatorId && this.assignedOperatorId.length > 0) {
+            const url = settings.base_url + '/ops/typing';
             const data = {
                 fromId: SimSageCommon.getClientId(),
                 toId: this.assignedOperatorId,
                 isTyping: true
             };
-            this.send_message('/ws/ops/typing', data);
+            jQuery.ajax({
+                headers: {
+                    'Content-Type': 'application/json',
+                    'API-Version': ui_settings.api_version,
+                },
+                'data': JSON.stringify(data),
+                'type': 'POST',
+                'url': url,
+                'dataType': 'json',
+                'success': function (data) {
+                    // do nothing
+                }
+
+            }).fail(function (err) {
+                // do nothing
+            });
         }
     }
 
@@ -115,13 +131,6 @@ class SimSageCommon {
             this.stompClient.debug = null;
         }
         this.refresh();
-    }
-
-    send_message(endPoint, data) {
-        if (this.is_connected) {
-            this.error = '';
-            this.stompClient.send(endPoint, {}, JSON.stringify(data));
-        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -392,33 +401,81 @@ class SimSageCommon {
                 this.refresh();
             }
         } else if (domain && user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
+            this.error = '';
+            const self = this;
             this.searching = false;  // we're not performing a search
             this.signing_in = true;  // we've started the process
-            this.stompClient.send("/ws/ops/ad/sign-in", {},
-                JSON.stringify({
-                    'organisationId': settings.organisationId,
-                    'kbList': [this.kb.id],
-                    'clientId': SemanticSearch.getClientId(),
-                    'sourceId': this.sourceId,
-                    'userName': user_name,
-                    'password': password,
-                }));
-            this.error = '';
+            const url = settings.base_url + '/ops/ad/sign-in';
+            const adSignInData = {
+                'organisationId': settings.organisationId,
+                'kbList': [this.kb.id],
+                'clientId': SemanticSearch.getClientId(),
+                'sourceId': this.sourceId,
+                'userName': user_name,
+                'password': password,
+            };
+            jQuery.ajax({
+                headers: {
+                    'Content-Type': 'application/json',
+                    'API-Version': ui_settings.api_version,
+                },
+                'data': JSON.stringify(adSignInData),
+                'type': 'POST',
+                'url': url,
+                'dataType': 'json',
+                'success': function (data) {
+                    self.receive_ws_data(data);
+                }
+
+            }).fail(function (err) {
+                console.error(JSON.stringify(err));
+                if (err && err["readyState"] === 0 && err["status"] === 0) {
+                    self.error = "Server not responding, not connected.";
+                } else {
+                    self.error = err;
+                }
+                self.busy = false;
+                self.refresh();
+            });
             this.refresh();
         }
     }
 
     sign_out() {
+        this.error = '';
+        const self = this;
         this.searching = false;  // we're not performing a search
         this.removeOffice365User();
-        this.stompClient.send("/ws/ops/ad/sign-out", {},
-            JSON.stringify({
-                'organisationId': settings.organisationId,
-                'kbList': [this.kb.id],
-                'clientId': SemanticSearch.getClientId(),
-                'sourceId': this.sourceId,
-            }));
-        this.error = '';
+        const url = settings.base_url + '/ops/ad/sign-out';
+        const signOutData = {
+            'organisationId': settings.organisationId,
+            'kbList': [this.kb.id],
+            'clientId': SemanticSearch.getClientId(),
+            'sourceId': this.sourceId,
+        };
+        jQuery.ajax({
+            headers: {
+                'Content-Type': 'application/json',
+                'API-Version': ui_settings.api_version,
+            },
+            'data': JSON.stringify(signOutData),
+            'type': 'POST',
+            'url': url,
+            'dataType': 'json',
+            'success': function (data) {
+                self.receive_ws_data(data);
+            }
+
+        }).fail(function (err) {
+            console.error(JSON.stringify(err));
+            if (err && err["readyState"] === 0 && err["status"] === 0) {
+                self.error = "Server not responding, not connected.";
+            } else {
+                self.error = err;
+            }
+            self.busy = false;
+            self.refresh();
+        });
         this.refresh();
     }
 
