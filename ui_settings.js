@@ -8,8 +8,6 @@ ui_settings = {
     fragment_count : 5,
     // distance between hits before merging into one sentence
     max_word_distance: 20,
-    // score cut-off
-    score_threshold: 0.0,
 
     // ask bot too?
     bot_enabled: true,

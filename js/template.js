@@ -63,7 +63,8 @@ function render_button(text, action) {
  *   search.next(id)     move to the next record if available
  */
 function render_result(organisation_id, kb_id, id, title, author, url, url_id, num_results, text, system_url) {
-    const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + url_id + '/-1';
+    const client_id = SemanticSearch.getClientId();
+    const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + client_id + '/' + url_id + '/-1';
     let result_str = '\
 		<div id={id} class="search-result">\
 		    <div class="search-text-container">\
@@ -113,7 +114,8 @@ function render_result(organisation_id, kb_id, id, title, author, url, url_id, n
  *   search.next(id)     move to the next record if available
  */
 function render_result_images(organisation_id, kb_id, id, title, author, url, url_id, num_results, text, system_url) {
-    const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + url_id + '/-1';
+    const client_id = SemanticSearch.getClientId();
+    const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + client_id + '/' + url_id + '/-1';
     let result_str = '\
 		<div id={id} class="search-result-images">\
 		    <div class="search-container-images">\
@@ -300,7 +302,8 @@ function render_have_user_email() {
 
 /* render an advanced view for a document */
 function render_details(system_url, organisation_id, kb_id, url_id, document, text, query) {
-    const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + url_id + '/0';
+    const client_id = SemanticSearch.getClientId();
+    const image_url = system_url + '/document/preview/' + organisation_id + '/' + kb_id + '/' + client_id + '/' + url_id + '/0';
     let result_str = '\
                         <div class="details-title">Details\
                             <div class="details-close-container"><img class="details-close-image" src="images/close.svg" alt="close" title="close dialog" onclick="search.closeDetails()" /></div>\

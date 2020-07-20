@@ -286,7 +286,7 @@ class SimSageCommon {
         const kb_list = [];
         for (const kb of this.kb_list) {
             if (this.kb && this.kb.id === kb.id) { // filter on selected kb
-                kb_list.push({"kbId": kb.id, "sid": kb.sid});
+                kb_list.push(kb.id);
             }
         }
         const data = {
@@ -397,7 +397,7 @@ class SimSageCommon {
             this.stompClient.send("/ws/ops/ad/sign-in", {},
                 JSON.stringify({
                     'organisationId': settings.organisationId,
-                    'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                    'kbList': [this.kb.id],
                     'clientId': SemanticSearch.getClientId(),
                     'sourceId': this.sourceId,
                     'userName': user_name,
@@ -414,7 +414,7 @@ class SimSageCommon {
         this.stompClient.send("/ws/ops/ad/sign-out", {},
             JSON.stringify({
                 'organisationId': settings.organisationId,
-                'kbList': [{'kbId': this.kb.id, 'sid': this.kb.sid}],
+                'kbList': [this.kb.id],
                 'clientId': SemanticSearch.getClientId(),
                 'sourceId': this.sourceId,
             }));
@@ -480,7 +480,7 @@ class SimSageCommon {
                     const self = this;
                     const kbList = [];
                     for (const item of this.kb_list) {
-                        kbList.push({"kbId": item.id, "sid": item.sid});
+                        kbList.push(item.id);
                     }
                     // use this code to now sign-in and get the user's details
                     const data = {"code": code, "redirectUrl": encodeURIComponent(domain.redirectUrl),
