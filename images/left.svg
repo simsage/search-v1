@@ -11,7 +11,7 @@
    version="1.1"
    id="svg6"
    sodipodi:docname="left.svg"
-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
   <metadata
      id="metadata12">
     <rdf:RDF>
@@ -40,22 +40,30 @@
      id="namedview8"
      showgrid="false"
      inkscape:zoom="24.108974"
-     inkscape:cx="7.9324584"
+     inkscape:cx="2.8859343"
      inkscape:cy="11.420973"
-     inkscape:window-x="0"
-     inkscape:window-y="27"
+     inkscape:window-x="114"
+     inkscape:window-y="98"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg6" />
+     inkscape:current-layer="svg6"
+     inkscape:snap-grids="false"
+     inkscape:snap-to-guides="false" />
+  <circle
+     style="fill:#afafaf;fill-opacity:1;stroke:#afafaf;stroke-width:0.83094662;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;fill-rule:nonzero"
+     id="path816"
+     cx="10.473277"
+     cy="10.526721"
+     r="10.047043" />
   <g
-     transform="rotate(180,56.77,10.25)"
+     transform="matrix(-0.71625132,0,0,-0.48153911,84.360042,14.948104)"
      id="angle-left"
-     style="fill:#e6e6e6">
+     style="fill:#ffffff;fill-opacity:1">
     <path
        inkscape:connector-curvature="0"
        d="m 108.129,10.99 -8.6,8.6 A 1.400425,1.400425 0 1 1 97.548,17.61 L 105.158,10 97.549,2.391 A 1.4007785,1.4007785 0 0 1 99.53,0.41 l 8.6,8.6 a 1.4,1.4 0 0 1 0,1.98 z"
        class="cls-2"
        data-name="Path 1"
        id="Path_1"
-       style="fill:#e6e6e6" />
+       style="fill:#ffffff;fill-opacity:1" />
   </g>
 </svg>

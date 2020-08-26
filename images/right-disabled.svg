@@ -10,7 +10,7 @@
    viewBox="0 0 21 21"
    version="1.1"
    id="svg6"
-   sodipodi:docname="right.svg"
+   sodipodi:docname="right-disabled.svg"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
   <metadata
      id="metadata12">
@@ -20,7 +20,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -49,7 +49,7 @@
      inkscape:snap-grids="false"
      inkscape:snap-to-guides="false" />
   <circle
-     style="fill:#afafaf;fill-opacity:1;stroke:#afafaf;stroke-width:0.83094662;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;fill-rule:nonzero"
+     style="fill:#ececec;fill-opacity:1;stroke:#ececec;stroke-width:0.83094662;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;fill-rule:nonzero"
      id="path816"
      cx="10.473277"
      cy="10.526721"
@@ -57,13 +57,13 @@
   <g
      transform="matrix(0.71625132,0,0,-0.48153911,-62.500961,15.031061)"
      id="angle-left"
-     style="fill:#ffffff;fill-opacity:1">
+     style="fill:#cccccc;fill-opacity:1">
     <path
        inkscape:connector-curvature="0"
        d="m 108.129,10.99 -8.6,8.6 A 1.400425,1.400425 0 1 1 97.548,17.61 L 105.158,10 97.549,2.391 A 1.4007785,1.4007785 0 0 1 99.53,0.41 l 8.6,8.6 a 1.4,1.4 0 0 1 0,1.98 z"
        class="cls-2"
        data-name="Path 1"
        id="Path_1"
-       style="fill:#ffffff;fill-opacity:1" />
+       style="fill:#cccccc;fill-opacity:1" />
   </g>
 </svg>

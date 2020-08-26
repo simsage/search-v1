@@ -10,8 +10,10 @@
    viewBox="0 0 21 21"
    version="1.1"
    id="svg6"
-   sodipodi:docname="right.svg"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
+   sodipodi:docname="next-page-disabled.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   width="21"
+   height="21">
   <metadata
      id="metadata12">
     <rdf:RDF>
@@ -39,31 +41,31 @@
      inkscape:window-height="896"
      id="namedview8"
      showgrid="false"
-     inkscape:zoom="24.108974"
-     inkscape:cx="2.8859343"
-     inkscape:cy="11.420973"
+     inkscape:zoom="8"
+     inkscape:cx="46.639977"
+     inkscape:cy="4.5310375"
      inkscape:window-x="114"
      inkscape:window-y="98"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg6"
      inkscape:snap-grids="false"
      inkscape:snap-to-guides="false" />
-  <circle
-     style="fill:#afafaf;fill-opacity:1;stroke:#afafaf;stroke-width:0.83094662;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;fill-rule:nonzero"
-     id="path816"
-     cx="10.473277"
-     cy="10.526721"
-     r="10.047043" />
   <g
-     transform="matrix(0.71625132,0,0,-0.48153911,-62.500961,15.031061)"
+     transform="matrix(-0.71625132,0,0,-0.48153911,84.360042,14.948104)"
      id="angle-left"
-     style="fill:#ffffff;fill-opacity:1">
-    <path
-       inkscape:connector-curvature="0"
-       d="m 108.129,10.99 -8.6,8.6 A 1.400425,1.400425 0 1 1 97.548,17.61 L 105.158,10 97.549,2.391 A 1.4007785,1.4007785 0 0 1 99.53,0.41 l 8.6,8.6 a 1.4,1.4 0 0 1 0,1.98 z"
-       class="cls-2"
-       data-name="Path 1"
-       id="Path_1"
-       style="fill:#ffffff;fill-opacity:1" />
-  </g>
+     style="fill:#ffffff;fill-opacity:1" />
+  <rect
+     style="fill:#ececec;fill-opacity:1;fill-rule:nonzero;stroke:#ececec;stroke-width:1.29173648;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     id="rect814"
+     width="18.980391"
+     height="18.763283"
+     x="1.0932779"
+     y="1.1658194" />
+  <path
+     inkscape:connector-curvature="0"
+     d="M 15.261599,9.5820452 9.1018384,5.4408078 a 1.0030566,0.67435966 0 1 0 -1.418894,0.953448 L 13.133617,10.058768 7.6836604,13.7228 a 1.0033096,0.67452973 0 0 0 1.418894,0.953929 l 6.1597606,-4.141237 a 1.0027518,0.67415475 0 0 0 0,-0.9534468 z"
+     class="cls-2"
+     data-name="Path 1"
+     id="Path_1"
+     style="fill:#cccccc;fill-opacity:1;stroke-width:0.58728445" />
 </svg>
