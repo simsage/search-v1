@@ -10,25 +10,19 @@ settings = {
     // the organisation's id to search
     organisationId: "<organisation>",
 
-    // number of results per page
+    // search settings
     page_size: 6,
-    // number of fragments per result max
-    fragment_count : 5,
-    // distance between hits before merging into one sentence
+    fragment_count: 3,
     max_word_distance: 20,
-
-    // if we don't have an operator available, tell the user thusly
-    operator_message: "Sorry, there are currently no free operators for you to talk to.",
-    // and how sensitive the bot response should be
-    bot_threshold: 0.8125,
-
-    // correct typos?
     use_spelling_suggest: false,
+    context_label: '',
+    context_match_boost: 0.02,
+    // bot sensitivity - controls the A.I's replies - we suggest you don't change it!
+    bot_threshold: 0.8125,
+    // show the advanced filters?
+    show_advanced_filter: true,
     // image types for link name display
     image_types: [".jpg", ".jpeg", ".png", ".gif", ".svg"],
-
-    // context default (empty is not set / ignored)
-    context_label: '',
-    // how much to boost a context match by in percentage points
-    context_match_boost: 0.02,
+    // placeholder for search
+    search_placeholder: "",
 };

@@ -1,38 +1,12 @@
 
 .search-results {
-    margin-top: 25px;
-    width: 95%;
-}
-
-.search-results .speech-bubble {
-    position: relative;
-    width: 90%;
-    padding: 10px;
-    margin-left: 5%;  /* aligns with rhs of contact us */
-    margin-top: 22px;
-    background-color: #ffffff;
+    width: 100% !important;
+    max-width: 1024px;
     border: 0 solid;
+    padding: 10px;
     border-radius: 10px;
-}
-.search-results .speech-bubble p {
-    font-size: 1.25em;
-}
-.search-results .speech-bubble:before,
-.search-results .speech-bubble:after {
-    content: "\0020";
-    display:block;
-    position:absolute;
-    top: -20px;
-    left: 5%;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-    border: solid 21px transparent;
-    border-top: 0;
-    border-bottom-color: #ffffff;
-}
-.search-results .speech-bubble:before {
-    top: -21px;
+    background-color: #ffffff;
+    margin-top: 22px;
 }
 
 /* main display */
@@ -52,11 +26,6 @@
     vertical-align: top;
     padding: 10px;
     width: 20%;
-}
-
-.search-results .search-result-inside-table {
-    border-collapse: collapse;
-    width: 100%;
 }
 
 .search-results .search-result {
@@ -96,12 +65,13 @@
 }
 
 .search-result .search-text-width {
-    width: 80%;
-    display: inline-block;
+    float: left;
+    width: 80% !important;
 }
 
 .search-result .search-image-width {
-    width: 20%;
+    float: right;
+    width: 20% !important;
 }
 
 .search-result .tr-1 {
@@ -109,8 +79,8 @@
 }
 
 .search-results .result-image {
-    width: 100px;
-    height: 100px;
+    width: 100px !important;
+    height: 100px !important;
     cursor: pointer;
 }
 

@@ -24,16 +24,13 @@ class SemanticSearch extends SimSageCommon {
         this.num_results = 0;
         this.num_pages = 0;
         this.chat_closed_for_last_query = false;
-        this.add_text_to_query_window = false;
         this.last_query = "";
         this.advanced_filter = {};
         this.semantic_search_results = [];
         this.semantic_set = {};
         this.syn_sets_seen = {};
-        // list of ambigous items to pick from
+        // list of ambiguous items to pick from
         this.synset_list = [];
-        // conversation list between operator, bots, and the user
-        this.chat_list = [];
 
         // operator's id if we're chatting with someone
         this.assignedOperatorId = '';
@@ -49,15 +46,16 @@ class SemanticSearch extends SimSageCommon {
             // show the updated chat window
             update_ui(this.page, this.num_pages, this.num_results, this.semantic_search_results,
                 this.semantic_set, this.synset_list, this.chat_list, false,
-                !this.chat_closed_for_last_query);
+                !this.chat_closed_for_last_query, this.is_typing);
+            // clear any text - after the chat
+            clear_search();
         }
     }
 
     // perform the semantic search
-    do_semantic_search(page, text, advanced_filter, add_text_to_query_window) {
-        if (this.kb && text.trim() !== '') {
-            this.add_text_to_query_window = add_text_to_query_window;
-            if (add_text_to_query_window) {
+    do_semantic_search(page, text, advanced_filter, add_text_to_chat) {
+        if (this.kb && text && text.trim() !== '') {
+            if (add_text_to_chat) {
                 // add the user's text to the chat stream
                 const dt = unix_time_convert(SimSageCommon.get_system_time());
                 const user_chat = {"who": "You", "what": text, "when": dt};
@@ -80,7 +78,7 @@ class SemanticSearch extends SimSageCommon {
                 this.show_details = false;
                 busy(true);
                 let source_id = '';
-                if (advanced_filter.source_id.length > 0) {
+                if (advanced_filter.source_id && advanced_filter.source_id.length > 0) {
                     source_id = advanced_filter.source_id;
                 }
 
@@ -114,7 +112,7 @@ class SemanticSearch extends SimSageCommon {
                     'url': url,
                     'dataType': 'json',
                     'success': function (data) {
-                        // self.receive_ws_data(data);
+                        busy(false);
                     }
 
                 }).fail(function (err) {
@@ -270,7 +268,7 @@ class SemanticSearch extends SimSageCommon {
                 // did we get an NLP result?
                 const nlp_reply = [];
                 const dt = unix_time_convert(SimSageCommon.get_system_time());
-                if (data.hasResult && data.text && data.text.length > 0 && this.add_text_to_query_window) {
+                if (data.hasResult && data.text && data.text.length > 0) {
                     const nlp_data = {"who": "Bot", "what": data.text, "when": dt};
                     const url_list = [];
                     nlp_reply.push(nlp_data);
@@ -298,14 +296,15 @@ class SemanticSearch extends SimSageCommon {
                     this.knowEmail = data.knowEmail;
                 }
 
-                if (data.hasResult) {
+                const has_chat = (this.assignedOperatorId.length > 0);
+                if (data.hasResult || has_chat) {
                     update_ui(this.page, this.num_pages, this.num_results, this.semantic_search_results,
                               this.semantic_set, this.synset_list, this.chat_list, false,
-                            nlp_reply.length > 0 && !this.chat_closed_for_last_query);
+                        (nlp_reply.length > 0 || has_chat), this.is_typing);
 
                 } else {
                     update_ui(0, 0, 0, [], {}, [], [],
-                        true, false);
+                        true, false, false);
                 }
 
             }
@@ -354,11 +353,13 @@ class SemanticSearch extends SimSageCommon {
         const newList = [];
         for (const _part of parts) {
             const part = _part.trim().toLowerCase();
-            const synSet = selected_syn_sets[part];
-            if (typeof synSet !== 'undefined' && parseInt(synSet) >= 0) {
-                newList.push(_part.trim() + '/' + synSet);
-            } else {
-                newList.push(_part.trim());
+            if (selected_syn_sets) {
+                const synSet = selected_syn_sets[part];
+                if (typeof synSet !== 'undefined' && parseInt(synSet) >= 0) {
+                    newList.push(_part.trim() + '/' + synSet);
+                } else {
+                    newList.push(_part.trim());
+                }
             }
         }
         return newList.join(" ");
@@ -366,10 +367,13 @@ class SemanticSearch extends SimSageCommon {
 
     // clean text - remove characters we use for special purposes
     cleanup_query_text(text) {
-        // remove any : ( ) characters from text first
+        // remove any : ( ) characters from text first (but not from http: and https:)
         text = text.replace(/\)/g, ' ');
         text = text.replace(/\(/g, ' ');
-        return text.replace(/:/g, ' ');
+        text = text.replace(/:/g, ' ');
+        text = text.replace(/http \/\//g, 'http://');
+        text = text.replace(/https \/\//g, 'https://');
+        return text;
     }
 
     // get a semantic search query string for all the filters etc.
@@ -380,7 +384,7 @@ class SemanticSearch extends SimSageCommon {
             query += "body: " + this.process_body_string(text, af["syn-sets"]);
             needsAnd = true;
         }
-        if (af.url.length > 0 && af.url[0].length > 0) {
+        if (af.url && af.url.length > 0 && af.url[0].length > 0) {
             if (needsAnd)
                 query += " and (";
             else
@@ -394,7 +398,7 @@ class SemanticSearch extends SimSageCommon {
             }
             query += ") "
         }
-        if (af.title.length > 0 && af.title[0].length > 0) {
+        if (af.title && af.title.length > 0 && af.title[0].length > 0) {
             if (needsAnd)
                 query += " and (";
             else
@@ -408,7 +412,7 @@ class SemanticSearch extends SimSageCommon {
             }
             query += ") "
         }
-        if (af.author.length > 0 && af.author[0].length > 0) {
+        if (af.author && af.author.length > 0 && af.author[0].length > 0) {
             if (needsAnd)
                 query += " and (";
             else
@@ -422,7 +426,7 @@ class SemanticSearch extends SimSageCommon {
             }
             query += ") "
         }
-        if (af.document_type.length > 0 && af.document_type[0].length > 0) {
+        if (af.document_type && af.document_type.length > 0 && af.document_type[0].length > 0) {
             if (needsAnd)
                 query += " and (";
             else

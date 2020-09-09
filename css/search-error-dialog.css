@@ -1,14 +1,20 @@
 
+.error-dialog-box {
+    position: absolute;
+    z-index: 999;
+    left: 100px;
+    max-width: 1024px;
+}
+
 .error-dialog {
     position: absolute;
     z-index: 999;
-    width: 70%;
-    margin-left: 10%;
-    margin-top: 20px;
+    width: 600px;
+    margin-top: 60px;
     background-color: #ffffff;
-    padding: 20px;
+    padding: 20px !important;
     border-radius: 10px;
-    border: 2px solid red;
+    border: 2px solid red !important;
 }
 
 .error-dialog .header {
@@ -38,6 +44,7 @@
 
 .error-dialog .close-text {
     float: left;
+    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
     color: #878787;
     font-size: 0.9em;
     margin-right: 8px;

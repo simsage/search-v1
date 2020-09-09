@@ -22,6 +22,9 @@ class SimSageCommon {
         // assigned operator
         this.assignedOperatorId = '';
         this.signed_in = false;
+
+        // conversation list between operator, bots, and the user
+        this.chat_list = [];
     }
 
 
@@ -42,9 +45,14 @@ class SimSageCommon {
             'dataType': 'json',
             'success': function (data) {
                 self.kb_list = data.kbList;
-                if (self.kb_list.length > 0) {
+                // wordpress override
+                if (settings && settings.kbId && settings.kbId.length > 0) {
+                    self.kb = {"name": "wordpress knowledge-base", "id": settings.kbId, "sourceList": []};
+                    self.on_change_kb(self.kb.id);
+                } else if (self.kb_list.length > 0) {
                     self.kb = self.kb_list[0];
                     self.on_change_kb(self.kb.id);
+                    show_kb_dropdown();
                 }
                 error('');
                 self.connection_retry_count = 1;
@@ -53,8 +61,6 @@ class SimSageCommon {
                 self.connect();
                 // setup is-typing check
                 window.setInterval(() => self.operator_is_typing(false), 1000);
-                // focus on the search field
-                focus_on_search();
             }
 
         }).fail(function (err) {
@@ -96,11 +102,11 @@ class SimSageCommon {
             this.typing_last_seen = now + 2000;
             if (!this.is_typing && isTyping) {
                 this.is_typing = isTyping;
-                notify_operator_is_typing(true);
+                update_chat_window(this.chat_list, this.is_typing);
             }
         } else if (this.typing_last_seen < now  && this.is_typing) {
             this.is_typing = false;
-            notify_operator_is_typing(false);
+            update_chat_window(this.chat_list, this.is_typing);
         }
     }
 
@@ -159,7 +165,6 @@ class SimSageCommon {
     }
 
     set_connected(is_connected) {
-        console.log('is_connected:' + is_connected);
         this.is_connected = is_connected;
         if (!is_connected) {
             if (this.stompClient !== null) {
@@ -176,7 +181,30 @@ class SimSageCommon {
             error('');
             this.connection_retry_count = 1;
             this.stompClient.debug = null;
+            simsage_connected();
         }
+    }
+
+    // post a message to the operator end-points
+    post_message(endPoint, data) {
+        const url = settings.base_url + endPoint;
+        const self = this;
+        jQuery.ajax({
+            headers: {
+                'Content-Type': 'application/json',
+                'API-Version': settings.api_version,
+            },
+            'data': JSON.stringify(data),
+            'type': 'POST',
+            'url': url,
+            'dataType': 'json',
+            'success': function (data) {
+                self.receive_ws_data(data);
+            }
+
+        }).fail(function (err) {
+            console.error(JSON.stringify(err));
+        });
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -513,13 +541,11 @@ class SimSageCommon {
                             self.set_office365_user(signedInUSer);
                             window.location.href = domain.redirectUrl;
                             self.signed_in = true;
-                            self.refresh();
                         }
                     }).fail(function (err) {
                         window.location.href = domain.redirectUrl;
                         console.error(err);
                         self.signed_in = false;
-                        self.refresh();
                         alert('office 365 sign-in failed');
                     });
                 }

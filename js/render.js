@@ -140,39 +140,28 @@ function render_url(url) {
  */
 function render_search_text_result(id, url, title, fragment, fragment_index, num_fragments) {
     let str = "<div class=\"search-result\">\n" +
-        "    <table class=\"search-result-inside-table\">\n" +
-        "    <tbody class=\"search-result-inside-table\">\n" +
-        "        <tr class=\"tr-1\">\n" +
-        "            <td title=\"visit [url]>\" class=\"search-text-width\">\n" +
-        "                <a href=\"[url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
-        "            </td>\n" +
-        "            <td rowspan=\"4\" title=\"view more details\" onclick=\"show_details([id]);\" class=\"search-image-width\">\n" +
-        "                <img src=\"[thumbnail_src]\" alt=\"[title]\" class=\"result-image\"/>\n" +
-        "            </td>\n" +
-        "        </tr>\n" +
-        "        <tr class=\"tr-1\">\n" +
-        "            <td title=\"view more details\" onclick=\"show_details([id]);\"><span class=\"title-text\">[title]</span></td>\n" +
-        "        </tr>\n" +
-        "        <tr class=\"tr-1\">\n" +
-        "            <td><span class=\"result-text\">[fragment]</span></td>\n" +
-        "        </tr>\n" +
-        "        <tr class=\"tr-1\">\n" +
-        "            <td class=\"navigate-td\">\n";
-        if (fragment_index > 0) {
-            str += "                <span class=\"navigate-left\" title=\"view the previous relevant fragment in this document\" onclick=\"prev_fragment([id]);\"><img src=\"images/left.svg\" class=\"navigate-left-image\" alt=\"previous\" /></span>\n";
-        } else {
-            str += "                <span class=\"no-navigate-left\" title=\"there is no previous fragment in this document\"><img src=\"images/left-disabled.svg\" class=\"navigate-left-image\" alt=\"no previous\" /></span>\n";
-        }
-        if ((fragment_index + 1) < num_fragments) {
-            str += "                <span class=\"navigate-right\" title=\"view the next relevant fragment in this document\" onclick=\"next_fragment([id]);\"><img src=\"images/right.svg\" class=\"navigate-right-image\" alt=\"next\" /></span>\n";
-        } else {
-            str += "                <span class=\"no-navigate-right\" title=\"there is no next fragment in this document\"><img src=\"images/right-disabled.svg\" class=\"navigate-right-image\" alt=\"no next\" /></span>\n";
-        }
-        str += "                <span class=\"navigate-text\" title=\"Scroll through other relevant search results on this page\">Scroll through other relevant search results on this page</span>\n" +
-        "            </td>\n" +
-        "        </tr>\n" +
-        "    </tbody>\n" +
-        "    </table>\n" +
+        "          <div title=\"visit [url]>\" class=\"search-text-width\">\n" +
+        "              <a href=\"[url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
+        "              <div title=\"view more details\" onclick=\"show_details([id]);\"><span class=\"title-text\">[title]</span></div>\n" +
+        "              <div><span class=\"result-text\">[fragment]</span></div>\n" +
+        "              <div class=\"navigate-td\">\n";
+    if (fragment_index > 0) {
+        str += "              <span class=\"navigate-left\" title=\"view the previous relevant fragment in this document\" onclick=\"prev_fragment([id]);\"><img src=\"" + image_base + "images/left.svg\" class=\"navigate-left-image\" alt=\"previous\" /></span>\n";
+    } else {
+        str += "              <span class=\"no-navigate-left\" title=\"there is no previous fragment in this document\"><img src=\"" + image_base + "images/left-disabled.svg\" class=\"navigate-left-image\" alt=\"no previous\" /></span>\n";
+    }
+    if ((fragment_index + 1) < num_fragments) {
+        str += "              <span class=\"navigate-right\" title=\"view the next relevant fragment in this document\" onclick=\"next_fragment([id]);\"><img src=\"" + image_base + "images/right.svg\" class=\"navigate-right-image\" alt=\"next\" /></span>\n";
+    } else {
+        str += "              <span class=\"no-navigate-right\" title=\"there is no next fragment in this document\"><img src=\"" + image_base + "images/right-disabled.svg\" class=\"navigate-right-image\" alt=\"no next\" /></span>\n";
+    }
+    str += "              <span class=\"navigate-text\" title=\"Scroll through other relevant search results on this page\">Scroll through other relevant search results on this page</span>\n" +
+        "              </div>\n" +
+        "          </div>\n" +
+
+        "          <div title=\"view more details\" onclick=\"show_details([id]);\" class=\"search-image-width\">\n" +
+        "              <img src=\"[thumbnail_src]\" alt=\"[title]\" class=\"result-image\"/>\n" +
+        "          </div>\n" +
         "</div>\n";
     const fragment_str = esc_html(fragment)
         .replace(/{hl1:}/g, "<span class='hl1'>")
@@ -260,31 +249,31 @@ function render_pagination(page, num_results, num_pages, is_text_view) {
     let str = "";
     if (page > 0) {
         str += "<span class=\"prev-page-box\" title=\"go to the previous page\" onclick=\"prev_page()\"'>" +
-               "<img src=\"images/prev-page.svg\" class=\"prev-page-image\" alt=\"previous page\"/></span>\n";
+               "<img src=\"" + image_base + "images/prev-page.svg\" class=\"prev-page-image\" alt=\"previous page\"/></span>\n";
     } else {
         str += "<span class=\"prev-page-box-disabled\" title=\"there is no previous page\">" +
-               "<img src=\"images/prev-page-disabled.svg\" class=\"prev-page-image\" alt=\"previous page disabled\"/></span>\n";
+               "<img src=\"" + image_base + "images/prev-page-disabled.svg\" class=\"prev-page-image\" alt=\"previous page disabled\"/></span>\n";
     }
     str += "<span class=\"pagination-text\" title=\"[pagination_text]\">[pagination_text]</span>\n";
     if ((page + 1) < num_pages) {
         str += "<span class=\"next-page-box\" title=\"go to the next page\" onclick=\"next_page()\">" +
-               "<img src=\"images/next-page.svg\" class=\"next-page-image\" alt=\"next page\"/></span>\n";
+               "<img src=\"" + image_base + "images/next-page.svg\" class=\"next-page-image\" alt=\"next page\"/></span>\n";
     } else {
         str += "<span class=\"next-page-box-disabled\" title=\"there is no next page\">" +
-               "<img src=\"images/next-page-disabled.svg\" class=\"next-page-image\" alt=\"next page disabled\"/></span>\n";
+               "<img src=\"" + image_base + "images/next-page-disabled.svg\" class=\"next-page-image\" alt=\"next page disabled\"/></span>\n";
     }
     str += "<span class=\"view-type-box\">\n";
     if (is_text_view) {
         str += "<span class=\"view-text-box-selected\">" +
-               "<img src=\"images/view-text-selected.svg\" class=\"view-text\" title=\"viewing text results\" alt=\"text\" /></span>\n";
+               "<img src=\"" + image_base + "images/view-text-selected.svg\" class=\"view-text\" title=\"viewing text results\" alt=\"text\" /></span>\n";
         str += "<span class=\"view-image-box\">" +
-               "<img src=\"images/view-thumbnails.svg\" class=\"view-image\" title=\"view thumbnails\" alt=\"thumbnails\" onclick=\"select_image_view()\"/></span>\n";
+               "<img src=\"" + image_base + "images/view-thumbnails.svg\" class=\"view-image\" title=\"view thumbnails\" alt=\"thumbnails\" onclick=\"select_image_view()\"/></span>\n";
 
     } else {
         str += "<span class=\"view-text-box\">" +
-               "<img src=\"images/view-text.svg\" class=\"view-text\" title=\"view text results\" alt=\"text\" onclick=\"select_text_view()\"/></span>\n";
+               "<img src=\"" + image_base + "images/view-text.svg\" class=\"view-text\" title=\"view text results\" alt=\"text\" onclick=\"select_text_view()\"/></span>\n";
         str += "<span class=\"view-image-box-selected\">" +
-               "<img src=\"images/view-thumbnails-selected.svg\" class=\"view-image\" title=\"viewing thumbnails\" alt=\"thumbnails\" /></span>\n";
+               "<img src=\"" + image_base + "images/view-thumbnails-selected.svg\" class=\"view-image\" title=\"viewing thumbnails\" alt=\"thumbnails\" /></span>\n";
     }
     str += "</span>\n";
 
@@ -479,7 +468,7 @@ function render_operator_is_typing() {
     return "<tr class=\"tr-1\">\n" +
             "    <td class=\"col-1\">\n" +
             "        <div class=\"left-box-white\">\n" +
-            "            <span class=\"typing-dots-box\"><img src=\"images/dots.gif\" class=\"typing-dots-image\" alt=\"typing\" /></span>\n" +
+            "            <span class=\"typing-dots-box\"><img src=\"" + image_base + "images/dots.gif\" class=\"typing-dots-image\" alt=\"typing\" /></span>\n" +
             "        </div>\n" +
             "    </td>\n" +
             "    <td class=\"col-2\">\n" +

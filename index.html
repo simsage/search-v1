@@ -2,6 +2,8 @@
     <head>
         <title>SimSage Search</title>
 
+        <link rel="icon" type="image/png" href="favicon.png?v=1.0" />
+
 	    <script src="js/jquery-3.4.1.min.js"></script>
 	    <script src="js/render.js"></script>
 
@@ -10,6 +12,7 @@
         <script src="settings.js"></script>
         <script src="js/simsage-common.js"></script>
         <script src="js/semantic-search.js"></script>
+        <script src="js/search-ui-script.js"></script>
 
         <link rel="stylesheet" type="text/css" href="css/search-bar.css" />
         <link rel="stylesheet" type="text/css" href="css/operator-chat-box.css" />
@@ -20,13 +23,19 @@
         <link rel="stylesheet" type="text/css" href="css/search-details.css" />
         <link rel="stylesheet" type="text/css" href="css/search-error-dialog.css" />
 
+
+        <script lang="js">
+        	const image_base = '';
+        </script>
+
     </head>
     <body style="background-color: #dadada;">
 
 
-    <!-- ******************************************************************************* -->
-    <!-- [ search box | search button | search options | spacer | chat ] -->
     <table class="search-table">
+
+        <!-- ******************************************************************************* -->
+        <!-- [ search box | search button | search options | spacer | chat ] -->
         <tr class="search-row">
             <!-- left bubble -->
             <td class="left-bubble">
@@ -34,18 +43,18 @@
             <!-- search box -->
             <td class="search-text-box">
                 <label class="search-text-label" title="ask SimSage">
-                    <input type="text" value="" class="search-text" onkeypress="search_typing(event)">
+                    <input type="text" value="" class="search-text" maxlength="100" onkeyup="search_typing(event, this.value)">
                 </label>
             </td>
             <!-- search clear (cross) -->
             <td class="search-button-box" title="clear your query" onclick="clear_search()">
-                <span class="search-button-span-box">
-                    <img src="images/light-close.svg" alt="select" class="clear-button-image">
-                </span>
+            <span class="search-button-span-box">
+                <img src="images/light-close.svg" alt="select" class="clear-button-image">
+            </span>
             </td>
             <!-- search button (magnification glass) -->
-            <td class="search-button-box" title="query SimSage" onclick="do_search()">
-                <span class="search-button-span-box">
+            <td class="search-button-box" title="query SimSage">
+                <span class="search-button-span-box" onclick="do_search()">
                     <img src="images/magnification-glass.svg" alt="select" class="search-button-image">
                 </span>
             </td>
@@ -56,10 +65,131 @@
             <td class="search-options-button" title="Search options" onclick="show_filter()">
                 <span class="search-options-text">Search Options</span>
             </td>
-            <td class="search-options-chevron-box" title="Search options" onclick="show_filter()">
-                <div class="search-options-chevron-image-box">
+            <td class="search-options-chevron-box" title="Search options">
+                <input type="hidden" class="time-stamp" value="0" />
+                <div class="search-options-chevron-image-box" onclick="click_filter()">
                     <img src="images/chevron-down.svg" alt="select" class="search-options-chevron">
                 </div>
+
+                <!-- ************************** -->
+                <!-- advanced search filter box -->
+                <div class="filter-box-view" style="display: none;" onclick="nop()">
+                    <div class="filter-box" >
+                        <div class="speech-bubble">
+                            <div class="title">
+                                <span class="search-by-text" title="Search by:">SEARCH BY:</span>
+                                <span onclick="close_filter()" title="Close" class="close-box">
+                                    <img src="images/close.svg" class="close-image" alt="close" />
+                                    <span class="close-text">Close</span>
+                                </span>
+                            </div>
+                            <table class="filter-table">
+                                <tr class="tr-1">
+
+                                    <td class="col-1 sign-in-box" style="display: none;">
+                                        <span class="category-text">Sign-in</span>
+                                        <div class="category-item">
+                                            <label class="sign-in-sel">
+                                                <select name="sign-in" class="category-select dd-sign-in">
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="col-2 sign-in-text" style="display: none;">
+                                        <span class="clear-text" title="sign-in"
+                                              onclick="show_sign_in()">sign-in</span>
+                                    </td>
+                                    <td class="col-2 sign-out-text" style="display: none;">
+                                        <span class="clear-text" title="sign-out" onclick="do_sign_out()">sign-out</span>
+                                    </td>
+
+                                    <td class="col-1">
+                                        <span class="category-text">Document Type</span>
+                                        <div class="category-item">
+                                            <label class="document-type-sel">
+                                                <select name="document-type" class="category-select" onchange="">
+                                                    <option value="">All Document Types</option>
+                                                    <option value="html,htm">Web</option>
+                                                    <option value="doc,docx">Word</option>
+                                                    <option value="pdf">PDF</option>
+                                                    <option value="xls,xlsx">Excel</option>
+                                                    <option value="jpg,jpeg,png,gif">Images</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="col-2">
+                                        <span class="clear-text" title="Clear Document Type" onclick="reset_selection('document-type-sel')">Clear</span>
+                                    </td>
+
+                                    <td class="col-1 knowledge-base-selector" style="display: none;">
+                                        <span class="category-text">Knowledge Base</span>
+                                        <div class="category-item">
+                                            <label class="knowledge-base-sel">
+                                                <select name="knowledge-base" class="category-select dd-knowledge-base"
+                                                        onchange="do_change_kb()">
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="col-2 knowledge-base-selector" style="display: none;">
+                                    </td>
+
+                                    <td class="col-1">
+                                        <span class="category-text">Source</span>
+                                        <div class="category-item">
+                                            <label class="source-sel">
+                                                <select name="source" class="category-select dd-source">
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="col-2">
+                                        <span class="clear-text" title="Clear Source" onclick="reset_selection('source-sel')">Clear</span>
+                                    </td>
+
+                                    <td class="col-1" colspan="2">
+                                        <span class="category-text">Title</span>
+                                        <div class="category-item">
+                                            <label>
+                                                <input type="text" maxlength="100" placeholder="Enter Title" class="category-input title-text" title="Enter Title">
+                                            </label>
+                                        </div>
+                                    </td>
+
+                                    <td class="col-1" colspan="2">
+                                        <span class="category-text">URL</span>
+                                        <div class="category-item">
+                                            <label>
+                                                <input type="text" maxlength="100" placeholder="Enter URL" class="category-input url-text" title="Enter URL">
+                                            </label>
+                                        </div>
+                                    </td>
+
+                                    <td class="col-1" colspan="2">
+                                        <span class="category-text">Author</span>
+                                        <div class="category-item">
+                                            <label>
+                                                <input type="text" maxlength="100" placeholder="Enter Author" class="category-input author-text" title="Enter Author">
+                                            </label>
+                                        </div>
+                                    </td>
+
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="bar-bottom">
+                            <span class="clear-text-box">
+                                <span class="clear-all-text" title="Clear all" onclick="clear_all()">Clear all</span>
+                            </span>
+                            <span class="done-button" title="Done" onclick="close_filter()">
+                                <span class="done-text">Done</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+
             </td>
             <!-- right bubble -->
             <td class="right-bubble">
@@ -71,15 +201,43 @@
             <td class="left-bubble-small">
             </td>
             <!-- chat with us button online -->
-            <td class="chat-with-us"  title="Chat with us" onclick="show_chat()">
-                <span class="chat-with-us-image-box">
-                    <img src="images/chat.svg" alt="select" class="chat-with-us-image">
-                </span>
+            <td class="chat-with-us"  title="Chat with us" onclick="click_chat()">
+            <input type="hidden" class="time-stamp" value="0" />
+            <span class="chat-with-us-image-box">
+                <img src="images/chat.svg" alt="select" class="chat-with-us-image">
+            </span>
+                <!-- ************************* -->
+                <!-- the operator/bot chat box -->
+                <div class="operator-chat-box-view" style="display: none;" onclick="nop()">
+                    <table class="operator-chat-box">
+                        <tr class="speech-bubble">
+                            <td colspan="2" class="operator-close-width">
+                                <div class="div-close" onclick="close_chat()" title="Close chat">
+                                    <span class="close-text">Close chat</span>
+                                    <span><img src="images/close.svg" class="close-image" alt="close" /></span>
+                                </div>
+                                <table class="chat-table">
+                                </table>
+                            </td>
+                        </tr>
+                        <tr class="chat-bar-bottom">
+                            <td class="chat-text-box">
+                                <label class="chat-box-text">
+                                    <input type="text" placeholder="Type your message" class="chat-text" title="Type your message"
+                                           maxlength="200" onkeyup="chat_typing(event, this.value)">
+                                </label>
+                            </td>
+                            <td class="chat-button" title="Send" onclick="do_chat()">
+                                <span class="chat-send-text">Send</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </td>
-            <td class="chat-with-us"  title="Chat with us" onclick="show_chat()">
-                <span class="chat-with-us-text">
-                    Chat
-                </span>
+            <td class="chat-with-us-second"  title="Chat with us" onclick="show_chat()">
+            <span class="chat-with-us-text">
+                Chat
+            </span>
             </td>
             <td class="right-bubble-small">
             </td>
@@ -88,282 +246,125 @@
 
         <!-- ****************************** -->
         <!-- Detail view of a specific item -->
-        <tr class="search-row search-details-view" style="display: none;">
-
+        <tr class="search-row search-details-view" style="display: none">
             <td colspan="13">
                 <div class="search-details" >
-                    <div class="header">
+                    <div class="search-details-header">
                         <span class="details-text" title="details">DETAILS</span>
                         <span onclick="close_details()" title="Close" class="close-box">
                         <img src="images/close.svg" class="close-image" alt="close" />
                         </span>
-                                    <span onclick="close_details()" title="Close" class="close-box">
+                        <span onclick="close_details()" title="Close" class="close-box">
                             <span class="close-text">Close</span>
                         </span>
                     </div>
                     <div class="spacer"></div>
                     <div class="detail-table"></div>
                 </div>
-
             </td>
-
         </tr>
 
 
-        <!-- ************************* -->
-        <!-- the operator/bot chat box -->
-        <tr class="search-row operator-chat-box-view" style="display: none;">
+
+        <!-- ********************* -->
+        <!-- Search result display -->
+        <tr class="search-results" style="display: none;">
             <td colspan="13">
-                <table class="operator-chat-box">
-                    <tr class="speech-bubble">
-                        <td class="search-row">
-                            <div class="div-close" onclick="close_chat()" title="Close chat">
-                                <span class="close-text">Close chat</span>
-                                <span><img src="images/close.svg" class="close-image" alt="close" /></span>
-                            </div>
-                            <table class="chat-table">
-                            </table>
+                <div class="pagination-box">
+                </div>
+                <div class="clear"></div>
+                <table class="search-result-table">
+                    <tr style="width: 100%;">
+                        <!-- this is where the search results are rendered into -->
+                        <td class="search-results-td">
                         </td>
-                    </tr>
-                    <tr class="chat-bar-bottom">
-                        <td class="chat-text-box">
-                            <label class="chat-box-text">
-                                <input type="text" placeholder="Type your message" class="chat-text" title="Type your message"
-                                       onkeypress="chat_typing(event)">
-                            </label>
-                        </td>
-                        <td class="chat-button" title="Send" onclick="do_chat()">
-                            <span class="chat-send-text">Send</span>
+                        <!-- this is where the categories of semantics go -->
+                        <td class="category-items-td">
                         </td>
                     </tr>
                 </table>
-            </td>
-        </tr>
-
-
-
-        <!-- ************************** -->
-        <!-- advanced search filter box -->
-        <tr class="filter-search-row filter-box-view" style="display: none;">
-            <td>
-                <div class="filter-box" >
-                    <div class="speech-bubble">
-                        <div class="title">
-                            <span class="search-by-text" title="Search by:">SEARCH BY:</span>
-                            <span onclick="close_filter()" title="Close" class="close-box">
-                                <img src="images/close.svg" class="close-image" alt="close" />
-                                <span class="close-text">Close</span>
-                            </span>
-                        </div>
-                        <table class="filter-table">
-                            <tr class="tr-1">
-
-                                <td class="col-1 sign-in-box" style="display: none;">
-                                    <span class="category-text">Sign-in</span>
-                                    <div class="category-item">
-                                        <label class="sign-in-sel">
-                                            <select name="sign-in" class="category-select dd-sign-in" onchange="">
-                                            </select>
-                                        </label>
-                                    </div>
-                                </td>
-                                <td class="col-2 sign-in-text" style="display: none;">
-                                    <span class="clear-text" title="sign-in"
-                                        onclick="show_sign_in()">sign-in</span>
-                                </td>
-                                <td class="col-2 sign-out-text" style="display: none;">
-                                    <span class="clear-text" title="sign-out" onclick="do_sign_out()">sign-out</span>
-                                </td>
-
-                                <td class="col-1">
-                                    <span class="category-text">Document Type</span>
-                                    <div class="category-item">
-                                        <label class="document-type-sel">
-                                            <select name="document-type" class="category-select" onchange="">
-                                                <option value="">All Document Types</option>
-                                                <option value="html,htm">Web</option>
-                                                <option value="doc,docx">Word</option>
-                                                <option value="pdf">PDF</option>
-                                                <option value="xls,xlsx">Excel</option>
-                                                <option value="jpg,jpeg,png,gif">Images</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </td>
-                                <td class="col-2">
-                                    <span class="clear-text" title="Clear Document Type" onclick="reset_selection('document-type-sel')">Clear</span>
-                                </td>
-
-                                <td class="col-1">
-                                    <span class="category-text">Knowledge Base</span>
-                                    <div class="category-item">
-                                        <label class="knowledge-base-sel">
-                                            <select name="knowledge-base" class="category-select dd-knowledge-base"
-                                                    onchange="do_change_kb()">
-                                            </select>
-                                        </label>
-                                    </div>
-                                </td>
-                                <td class="col-2">
-                                </td>
-
-                                <td class="col-1">
-                                    <span class="category-text">Source</span>
-                                    <div class="category-item">
-                                        <label class="source-sel">
-                                            <select name="source" class="category-select dd-source">
-                                            </select>
-                                        </label>
-                                    </div>
-                                </td>
-                                <td class="col-2">
-                                    <span class="clear-text" title="Clear Source" onclick="reset_selection('source-sel')">Clear</span>
-                                </td>
-
-                                <td class="col-1" colspan="2">
-                                    <span class="category-text">Title</span>
-                                    <div class="category-item">
-                                        <label>
-                                            <input type="text" placeholder="Enter Title" class="category-input title-text" title="Enter Title">
-                                        </label>
-                                    </div>
-                                </td>
-
-                                <td class="col-1" colspan="2">
-                                    <span class="category-text">URL</span>
-                                    <div class="category-item">
-                                        <label>
-                                            <input type="text" placeholder="Enter URL" class="category-input url-text" title="Enter URL">
-                                        </label>
-                                    </div>
-                                </td>
-
-                                <td class="col-1" colspan="2">
-                                    <span class="category-text">Author</span>
-                                    <div class="category-item">
-                                        <label>
-                                            <input type="text" placeholder="Enter Author" class="category-input author-text" title="Enter Author">
-                                        </label>
-                                    </div>
-                                </td>
-
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="bar-bottom">
-                        <span class="clear-text-box">
-                            <span class="clear-all-text" title="Clear all" onclick="clear_all()">Clear all</span>
-                        </span>
-                        <span class="done-button" title="Done" onclick="close_filter()">
-                            <span class="done-text">Done</span>
-                        </span>
-                    </div>
+                <div class="clear"></div>
+                <div class="pagination-box">
                 </div>
+                <div class="clear"></div>
+            </td>
+        </tr>
 
+
+        <!-- ***************** -->
+        <!-- Sign-in dialog box -->
+        <tr class="search-sign-in" style="display: none;">
+            <td>
+                <div class="search-sign-in-area">
+                    <div class="header">
+                        <span class="title sign-in-title" title="Sign-in">sign-in</span>
+                        <span onclick="close_sign_in()" title="Close" class="close-box">
+                        <span class="close-text">Close</span>
+                        <img src="images/close.svg" class="close-image" alt="close" />
+                    </span>
+                    </div>
+                    <span class="category-text">username</span>
+                    <div class="category-item">
+                        <label>
+                            <input type="text" maxlength="100" placeholder="your username" class="category-input user-name" title="your username">
+                        </label>
+                    </div>
+                    <span class="category-text">password</span>
+                    <div class="category-item">
+                        <label>
+                            <input type="password" maxlength="80" placeholder="your password" class="category-input password" title="your password">
+                        </label>
+                    </div>
+                    <div class="spacer"></div>
+                </div>
+                <div class="bar-bottom">
+            <span class="clear-text-box">
+            </span>
+                    <span class="sign-in-button" title="sign-in" onclick="do_sign_in()">
+                <span class="sign-in-text">sign-in</span>
+            </span>
+                </div>
             </td>
         </tr>
 
 
 
-    </table>
-
-
-
-    <!-- ***************** -->
-    <!-- Sign-in dialog box -->
-    <div class="search-sign-in" style="display: none;">
-        <div class="search-sign-in-area">
-            <div class="header">
-                <span class="title sign-in-title" title="Sign-in">sign-in</span>
-                <span onclick="close_sign_in()" title="Close" class="close-box">
+        <!-- ***************** -->
+        <!-- NO Search results -->
+        <tr class="no-search-results" style="display: none;">
+            <td>
+                <div class="no-results-found-box">
+                    <span class="no-results-found">No Results found for</span>
+                    <span class="not-found-words">&nbsp</span>
+                    <span onclick="close_no_results()" title="Close" class="close-box">
                     <span class="close-text">Close</span>
                     <img src="images/close.svg" class="close-image" alt="close" />
                 </span>
-            </div>
-            <span class="category-text">username</span>
-            <div class="category-item">
-                <label>
-                    <input type="text" placeholder="your username" class="category-input user-name" title="your username">
-                </label>
-            </div>
-            <span class="category-text">password</span>
-            <div class="category-item">
-                <label>
-                    <input type="password" placeholder="your password" class="category-input password" title="your password">
-                </label>
-            </div>
-            <div class="spacer"></div>
-        </div>
-        <div class="bar-bottom">
-            <span class="clear-text-box">
-            </span>
-            <span class="sign-in-button" title="sign-in" onclick="do_sign_in()">
-                <span class="sign-in-text">sign-in</span>
-            </span>
-        </div>
-    </div>
-
-
-    <!-- ********************* -->
-    <!-- Search result display -->
-    <div class="search-results" style="display: none;">
-        <div class="speech-bubble">
-            <div class="pagination-box">
-            </div>
-            <div class="clear"></div>
-            <table class="search-result-table">
-                <tr style="width: 100%;">
-                    <!-- this is where the search results are rendered into -->
-                    <td class="search-results-td">
-                    </td>
-                    <!-- this is where the categories of semantics go -->
-                    <td class="category-items-td">
-                    </td>
-                </tr>
-            </table>
-            <div class="clear"></div>
-            <div class="pagination-box">
-            </div>
-            <div class="clear"></div>
-        </div>
-    </div>
-
-
-    <!-- ***************** -->
-    <!-- NO Search results -->
-    <div class="no-search-results" style="display: none;">
-        <div class="no-results-found-box">
-            <span class="no-results-found">No Results found for</span>
-            <span class="not-found-words">&nbsp</span>
-            <span onclick="close_no_results()" title="Close" class="close-box">
-                <span class="close-text">Close</span>
-                <img src="images/close.svg" class="close-image" alt="close" />
-            </span>
-        </div>
-        <div class="no-results-text">
-            If you would like us to follow up on your query by email, please enter your email address and we'll
-            get back to you with a response within 24 hours
-        </div>
-        <!-- email text box -->
-        <div>
+                </div>
+                <div class="no-results-text">
+                    If you would like us to follow up on your query by email, please enter your email address and we'll
+                    get back to you with a response within 24 hours
+                </div>
+                <!-- email text box -->
+                <div>
             <span class="email-text-box">
                 <label class="email-address-text">
                     <input type="text" placeholder="Enter your email address" title="Enter your email address"
-                           onkeypress="email_typing(event)" class="email-text">
+                           maxlength="100" onkeypress="email_typing(event)" class="email-text">
                 </label>
             </span>
-            <span class="send-button float-left" title="Send" onclick="do_email()">
-                <span class="send-text">Send</span>
-            </span>
-        </div>
-        <!-- chat to one of our operators -->
-        <div class="chat-spacer"></div>
-        <div class="chat-to-operator">
-            Or chat to one of our operators
-        </div>
-        <!-- chat with us button online -->
-        <div class="online">
-            <span class="chat-with-us-online" title="Chat with us" onclick="show_chat()">
+                    <span class="send-button float-left" title="Send" onclick="do_email()">
+                    <span class="send-text">Send</span>
+                </span>
+                </div>
+                <!-- chat to one of our operators -->
+                <div class="chat-spacer"></div>
+                <div class="chat-to-operator">
+                    Or chat to one of our operators
+                </div>
+                <!-- chat with us button online -->
+                <div class="online">
+            <span class="chat-with-us-online" title="Chat with us" onclick="click_chat()">
                 <span class="chat-with-us-image-box">
                     <img src="images/chat.svg" alt="select" class="chat-with-us-image">
                 </span>
@@ -371,489 +372,35 @@
                     Chat
                 </span>
             </span>
-        </div>
-        <div class="chat-spacer"></div>
-    </div>
+                </div>
+                <div class="chat-spacer"></div>
+            </td>
+        </tr>
 
 
-    <!-- ***************** -->
-    <!-- Error dialog box -->
-    <div class="error-dialog" style="display: none;">
-        <div class="header">
-            <span class="title" title="an error occurred">ERROR</span>
-            <span onclick="close_error()" title="Close" class="close-box">
-                <span class="close-text">Close</span>
-                <img src="images/close.svg" class="close-image" alt="close" />
-            </span>
-        </div>
-        <div class="error-text"></div>
-        <div class="error-spacer"></div>
-    </div>
+
+
+
+        <!-- ***************** -->
+        <!-- Error dialog box -->
+        <tr class="error-dialog-box" style="display: none;">
+            <td class="error-dialog" >
+                <div class="header">
+                    <span class="title" title="an error occurred">ERROR</span>
+                    <span onclick="close_error()" title="Close" class="close-box">
+                    <span class="close-text">Close</span>
+                    <img src="images/close.svg" class="close-image" alt="close" />
+                </span>
+                </div>
+                <div class="error-text"></div>
+                <div class="error-spacer"></div>
+            </td>
+        </tr>
+
+
+    </table>
 
 
     </body>
-
-    <script lang="js">
-
-        // call update_ui(0, 0, 0, [], {}, [], false, false) to draw the UI
-        // call setup_dropdowns([], []) to setup the advanced search kb and sources
-        // see: $(document).ready() below for an example
-
-        // create an instance of our object
-        const search = new SemanticSearch();
-        search.init_simsage();
-
-        // callbacks fns to set to use this UI
-        const callback = {
-            do_search: (page, text, filter) => search.do_semantic_search(page, text, filter, true),
-            do_chat: (page, text, filter) => search.do_chat(page, text, filter),
-            do_email: (email) => search.send_email(email),
-            do_sign_in: (source_id, user, password) => search.sign_in(source_id, user, password),
-            do_sign_out: () => search.sign_out(),
-            do_close_query_window: () => search.close_query_window(),
-            change_kb: (kb_id) => search.on_change_kb(kb_id),
-            user_is_typing: () => search.user_is_typing(),
-            view_prev_page: () => search.prev_page(),
-            view_next_page: () => search.next_page(),
-        }
-
-        //////////////////////////////////////////////////////////////////////////////////////
-        // private helpers and cache items
-
-        // text or image view?
-        let is_text_view = true;
-
-        // pagination variables (cache)
-        let page_cache = 0;
-        let num_pages_cache = 0;
-        let num_results_cache = 0;
-
-        // data items - cache for the UI
-        let result_list_cache = [];
-        let conversation_list_cache = [];
-        let category_set_cache = {};
-        let domain_list_cache = [];
-        let syn_set_list_cache = [];
-        let selected_syn_sets = {};
-
-        // is the operator typing
-        let is_typing_cache = false;
-
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // JS logic for the item above
-
-        /**
-         * update the UI, draw it
-         *
-         * @param page                  the page (starting at zero) we're on
-         * @param num_pages             the number of pages in total
-         * @param num_results           the total number of results found for this query
-         * @param result_list           a list of search results
-         * @param category_set          a list of semantic categories to display alongside the search results
-         * @param synset_list           a set of synsets to be displayed for selection
-         * @param conversation_list     a bot conversation list
-         * @param show_not_found        display "no results found"?
-         * @param has_chat              do we need to show the chat bot window?
-         */
-        function update_ui(page, num_pages, num_results, result_list, category_set,
-                           synset_list, conversation_list, show_not_found, has_chat) {
-            // set locally for other update functions
-            result_list_cache = result_list;
-            conversation_list_cache = conversation_list;
-            category_set_cache = category_set;
-            syn_set_list_cache = synset_list;
-            page_cache = page;
-            num_pages_cache = num_pages;
-            num_results_cache = num_results;
-
-            if (!show_not_found) {
-                if (result_list.length > 0) {
-                    $(".search-results-td").html(render_search_results(result_list, is_text_view));
-                    $(".category-items-td").html(render_category_items(synset_list, selected_syn_sets, category_set));
-                    $(".search-results").show();
-                    $(".no-search-results").hide();
-                    setup_pagination();
-                } else {
-                    $(".search-results").hide();
-                }
-                if (has_chat) {
-                    show_chat();
-                } else {
-                    focus_on_search();
-                }
-
-            } else {
-                const text = $("label.search-text-label input").val();
-                $(".not-found-words").html("\"" + render_no_results(text) + "\"");
-                $(".search-results").hide();
-                $(".no-search-results").show();
-                focus_on_search();
-            }
-        }
-
-
-        /**
-         * setup the drop-down boxes for the advanced filter interface
-         *
-         * @param kb_list           a list of knowledge base items {id, name}
-         * @param source_list       a list of source items {id, name}
-         */
-        function setup_dropdowns(kb_list, source_list) {
-            let str1 = "";
-            for (const kb of kb_list) {
-                str1 += "<option value=\"" + esc_html(kb.id) + "\">" + esc_html(kb.name) + "</option>";
-            }
-            $(".dd-knowledge-base").html(str1);
-
-            let str2 = "<option value=\"\">All Sources</option>";
-            for (const source of source_list) {
-                str2 += "<option value=\"" + esc_html(source.id) + "\">" + esc_html(source.name) + "</option>";
-            }
-            $(".dd-source").html(str2);
-        }
-
-        // tell the system we are busy (or not)
-        function busy(is_busy) {
-            if (is_busy) {
-                $(".search-table input").attr("disabled", true);
-                $(".operator-chat-box input").attr("disabled", true);
-                $(".filter-box input").attr("disabled", true);
-                $(".search-sign-in input").attr("disabled", true);
-            } else {
-                $(".search-table input").removeAttr("disabled");
-                $(".operator-chat-box input").removeAttr("disabled");
-                $(".filter-box input").removeAttr("disabled");
-                $(".search-sign-in input").removeAttr("disabled");
-            }
-        }
-        // tell us there is an error
-        function error(err) {
-            busy(false);
-            if (err && err !== '') {
-                let err_str = "";
-                if (err && err["readyState"] === 0 && err["status"] === 0) {
-                    err_str = "Server not responding, not connected.";
-                } else if (err && err["responseText"] && err["status"] > 299) {
-                    err_str = err["responseText"];
-                } else {
-                    err_str = err;
-                }
-                if (err_str && err_str.trim && err_str.trim().length > 0) {
-                    $(".error-text").html(esc_html(err_str));
-                    $(".error-dialog").show();
-                }
-            } else {
-                close_error();
-            }
-        }
-        function close_error() {
-            $(".error-dialog").hide();
-        }
-        function close_no_results() {
-            $(".no-search-results").hide();
-        }
-        // user selects a syn-set to use
-        function select_syn_set(word, index) {
-            selected_syn_sets[word] = index;
-        }
-        // set text focus on an item and make sure the text cursor is at the end of that field
-        function focus_text(ctrl) {
-            const c = $(ctrl);
-            c.focus();
-            const value = c.val();
-            c.val("");
-            c.val(value);
-        }
-        function focus_on_search() {
-            focus_text(".search-text");
-        }
-        // a user decides to change their kb
-        function do_change_kb() {
-            if (callback.change_kb) {
-                callback.change_kb($(".dd-knowledge-base").val());
-            }
-        }
-        // user wishes to view the previous page
-        function prev_page() {
-            if (callback.view_prev_page) {
-                callback.view_prev_page(page_cache, num_pages_cache, num_results_cache);
-            }
-        }
-        // user wishes to view the next page
-        function next_page() {
-            if (callback.view_next_page) {
-                callback.view_next_page(page_cache, num_pages_cache, num_results_cache);
-            }
-        }
-        // we just got a message that the operator's typing status has changed
-        function notify_operator_is_typing(is_typing) {
-            // todo: implement
-            is_typing_cache = is_typing;
-            const ct = $(".chat-table");
-            ct.html(render_chats(conversation_list_cache, is_typing_cache));
-            ct.animate({scrollTop: ct.prop("scrollHeight")}, 10);
-        }
-        // setup render pagination
-        function setup_pagination() {
-            $(".pagination-box").html(render_pagination(page_cache, num_results_cache,
-                                                        num_pages_cache, is_text_view));
-        }
-        // reset selection to default for a drop-down
-        function reset_selection(selection_class) {
-            $('label.' + selection_class + ' select').val("");
-        }
-        // reset all selections and text in the advanced search filter
-        function clear_all() {
-            reset_selection('document-type-sel');
-            reset_selection('source-sel');
-            $(".title-text").val("");
-            $(".url-text").val("");
-            $(".author-text").val("");
-        }
-        // return the values of the advanced filter box
-        function get_advanced_filter() {
-            return {
-                "document_type": $('label.document-type-sel select').val().split(','),
-                "kb": $('label.knowledge-base-sel select').val(),
-                "source_id": $('label.source-sel select').val(),
-                "title": [$('.title-text').val()],
-                "url": [$('.url-text').val()],
-                "author": [$('.author-text').val()],
-                "syn-sets": selected_syn_sets,
-            };
-        }
-        // search results text-view
-        function select_text_view() {
-            is_text_view = true;
-            $(".search-results-td").html(render_search_results(result_list_cache, is_text_view));
-            setup_pagination();
-        }
-        // search results image-view
-        function select_image_view() {
-            is_text_view = false;
-            $(".search-results-td").html(render_search_results(result_list_cache, is_text_view));
-            setup_pagination();
-        }
-        // show the chat dialog and render its text and scroll down
-        function show_chat() {
-            $(".operator-chat-box-view").show();
-            $(".filter-box-view").hide();
-            $(".search-details-view").hide();
-            close_sign_in();
-            const ct = $(".chat-table");
-            ct.html(render_chats(conversation_list_cache, is_typing_cache));
-            ct.animate({scrollTop: ct.prop("scrollHeight")}, 10);
-            focus_text(".chat-text")
-        }
-        // close the chat dialog
-        function close_chat() {
-            $(".operator-chat-box-view").hide();
-            if (callback.do_close_query_window) {
-                callback.do_close_query_window();
-            }
-            focus_on_search();
-        }
-        // show the advanced search filter
-        function show_filter() {
-            $(".filter-box-view").show();
-            $(".operator-chat-box-view").hide();
-            $(".search-details-view").hide();
-            close_sign_in();
-            focus_text(".chat-text")
-        }
-        // close the advanced search filter
-        function close_filter() {
-            $(".filter-box-view").hide();
-            focus_on_search();
-        }
-        // show all details for a particular result
-        function show_details(id) {
-            $(".filter-box-view").hide();
-            $(".operator-chat-box-view").hide();
-            $(".search-details-view").show();
-            $(".detail-table").html(render_details(id, result_list_cache));
-        }
-        // close the details view of a particular result
-        function close_details() {
-            $(".search-details-view").hide();
-            focus_on_search();
-        }
-        // add a search term (or remove) to the search text from the semantics / categories box
-        function add_search(term) {
-            const ctl = $("label.search-text-label input");
-            let text = " " + ctl.val() + " ";
-            if (text.indexOf(" " + term + " ") >= 0) {
-                text = text.replace(" " + term + " ", " ");
-            } else {
-                text = text + " " + term;
-            }
-            ctl.val(text.trim());
-            focus_on_search();
-        }
-        // fragment browser prev
-        function prev_fragment(id) {
-            const result = get_result_by_id(id, result_list_cache);
-            if (result != null) {
-                if (result.textIndex > 0) {
-                    result.textIndex -= 1;
-                    $(".search-results-td").html(render_search_results(result_list_cache, is_text_view));
-                }
-            }
-        }
-        // fragment browser next
-        function next_fragment(id) {
-            const result = get_result_by_id(id, result_list_cache);
-            if (result != null) {
-                if (result.textIndex + 1 < result.textList.length) {
-                    result.textIndex += 1;
-                    $(".search-results-td").html(render_search_results(result_list_cache, is_text_view));
-                }
-            }
-        }
-        // start a search
-        function do_search() {
-            const af = get_advanced_filter(); // get advanced search options
-            const text = $("label.search-text-label input").val();
-            if (callback.do_search) {
-                callback.do_search(page_cache, text, af);
-            }
-        }
-        // clear the search text input
-        function clear_search() {
-            $("label.search-text-label input").val("");
-        }
-        // send a chat message to the system
-        function do_chat() {
-            const af = get_advanced_filter(); // get advanced search options
-            const text = $("label.chat-box-text input").val();
-            $("label.search-text-label input").val(text);
-            if (callback.do_chat) {
-                callback.do_chat(page_cache, text, af);
-            }
-        }
-        // send an "email me" request to the server
-        function do_email() {
-            const text = $("label.email-address-text input").val();
-            if (callback.do_email) {
-                callback.do_email(text);
-            }
-        }
-        // signal system that a client is typing on their keyboard
-        function user_is_typing() {
-            if (callback.user_is_typing) {
-                callback.user_is_typing();
-            }
-        }
-        // test enter and/or typing on the search box
-        function search_typing(event) {
-            if (event.keyCode === 13) {
-                do_search();
-            }
-        }
-        // test enter and/or typing on the search box
-        function chat_typing(event) {
-            if (event.keyCode === 13) {
-                do_chat();
-            } else {
-                user_is_typing();
-            }
-        }
-        // test enter on email box
-        function email_typing(event) {
-            if (event.keyCode === 13) {
-                do_email();
-            }
-        }
-        // simsage notifies the ui we have domains to sign-in to {sourceId, name (of source), domain_type}
-        function setup_sign_in(domain_list) {
-            domain_list_cache = domain_list;
-            $(".sign-out-text").hide(); // always hidden until signed-in
-            if (domain_list && domain_list.length > 0 && callback.do_sign_in) {
-                let str = "";
-                for (const domain of domain_list) {
-                    str += "<option value=\"" + esc_html(domain.sourceId) + "\">" + esc_html(domain.name) +
-                           " (" + esc_html(domain.domain_type) + ")</option>";
-                }
-                $(".dd-sign-in").html(str);
-                $(".sign-in-box").show();
-                $(".sign-in-text").show();
-            } else {
-                $(".sign-in-box").hide();
-                $(".sign-in-text").hide();
-            }
-        }
-        // helper for sign-in
-        function get_selected_domain() {
-            let selected_domain = null;
-            const selected_source_id = $('label.sign-in-sel select').val();
-            for (const domain of domain_list_cache) {
-                if (domain.sourceId == selected_source_id) {
-                    selected_domain = domain;
-                    break;
-                }
-            }
-            return selected_domain;
-        }
-        // reset selection to default for a drop-down
-        function show_sign_in() {
-            let selected_domain = get_selected_domain();
-            if (selected_domain) {
-                $(".filter-box-view").hide();
-                $(".sign-in-title").html("sign-in to \"" + esc_html(selected_domain.name) + ", " +
-                                         esc_html(selected_domain.domain_type) + "\"");
-                $(".search-sign-in").show();
-                focus_text(".user-name");
-            }
-        }
-        // tell simsage we'd like to sign-out
-        function do_sign_out() {
-            if (do_sign_out) {
-                do_sign_out();
-            }
-        }
-        function close_sign_in() {
-            $(".search-sign-in").hide();
-        }
-        function do_sign_in() {
-            let selected_domain = get_selected_domain();
-            if (selected_domain && callback.do_sign_in) {
-                callback.do_sign_in(selected_domain.sourceId, $(".user-name").val(), $(".password").val());
-            }
-        }
-        // update the sign-in status (close), are we signed in or not?
-        function sign_in_status(signed_in) {
-            $(".search-sign-in").hide(); // in all cases, close the sign-in dialog
-            // change the text on the filter dialog
-            if (signed_in) {
-                $(".sign-out-text").show();
-                $(".sign-in-text").hide();
-            } else {
-                $(".sign-in-text").show();
-                $(".sign-out-text").hide();
-            }
-        }
-        // monitor the ESC key to close dialog boxes
-        $(document).on('keydown', function(event) {
-            if (event.key === "Escape") {
-                const err_ctrl = $(".error-dialog");
-                if (err_ctrl.is(":visible")) {
-                    err_ctrl.hide();
-                } else {
-                    close_chat();
-                    $(".filter-box-view").hide();
-                    $(".search-details-view").hide();
-                    $(".search-sign-in").hide();
-                    $(".no-search-results").hide();
-                }
-            }
-        });
-
-        $(document).ready(function() {
-            setup_dropdowns([], []);
-            update_ui(0, 0, 0, [], {}, [], false, false);
-        });
-
-    </script>
 
 </html>
