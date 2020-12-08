@@ -16,11 +16,11 @@
    viewBox="0 0 96 96"
    style="enable-background:new 0 0 96 96;"
    xml:space="preserve"
-   sodipodi:docname="view-text.svg"
+   sodipodi:docname="view-text-selected.svg"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"><metadata
    id="metadata11"><rdf:RDF><cc:Work
        rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
    id="defs9" /><sodipodi:namedview
    pagecolor="#ffffff"
    bordercolor="#666666"
@@ -34,7 +34,7 @@
    inkscape:window-height="818"
    id="namedview7"
    showgrid="false"
-   inkscape:zoom="2.4583333"
+   inkscape:zoom="1"
    inkscape:cx="-130.98305"
    inkscape:cy="47.999996"
    inkscape:window-x="0"
@@ -48,13 +48,13 @@
 </style>
 <g
    id="XMLID_7_"
-   style="fill:#cccccc;fill-opacity:1"
+   style="fill:#646464;fill-opacity:1"
    transform="matrix(1.6881284,0,0,1.9072782,-34.081515,-44.5663)">
 	<path
    id="XMLID_13_"
    class="st0"
    d="M 24.7,56.8 H 71.4 V 51 H 24.7 Z m 0,11.6 H 71.4 V 62.6 H 24.7 Z m 0,-23.3 H 71.4 V 39.3 H 24.7 Z m 0,-17.5 v 5.8 h 46.7 v -5.8 z"
-   style="fill:#cccccc;fill-opacity:1"
+   style="fill:#646464;fill-opacity:1"
    inkscape:connector-curvature="0" />
 </g>
 </svg>

@@ -1,17 +1,14 @@
 
 // the settings for this application - no trailing / on the base_url please
-settings = {
-    // the service layer end-point, change "localhost:8080" to ...
-    base_url: 'https://<server>/api',
+let settings = {
+    // the service layer end-point, change "<server>" to ... (no / at end)
+    base_url: "https://<server>",
     // api version of ws_base
     api_version: 1,
-    // web sockets platform endpoint for comms
-    ws_base: 'https://<server>/ws-api',
-    // the organisation's id to search
+    // the organisation's id to search, change "<organisation>" to...
     organisationId: "<organisation>",
 
     // search settings
-    page_size: 6,
     fragment_count: 3,
     max_word_distance: 20,
     use_spelling_suggest: false,
