@@ -1723,7 +1723,7 @@ input::-ms-clear {
 
 .operator-chat-box .chat-bar-bottom {
     margin-left: -1px;
-    width: 544px !important;
+    width: 550px !important;
     height: 48px !important;
     cursor: text;
 }
@@ -1794,6 +1794,7 @@ input::-ms-clear {
     margin-left: 8px;
     width: 400px !important;
     height: 32px;
+    margin-right: 0;
     background-color: transparent;
     border: 0 solid;
     font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
@@ -1809,8 +1810,8 @@ input::-ms-clear {
     border-bottom: 1px solid #878787;
     color: #ffffff;
     padding: 4px;
-    width: 112px !important;
-    height: 48px;
+    width: 94px !important;
+    height: 50px;
     font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
     font-size: 16px;
     cursor: pointer;
@@ -1825,8 +1826,8 @@ input::-ms-clear {
     border-bottom: 1px solid #878787;
     color: #ffffff;
     padding: 4px;
-    width: 112px !important;
-    height: 48px;
+    width: 94px !important;
+    height: 50px;
     font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
     font-size: 16px;
     cursor: pointer;
@@ -2060,6 +2061,7 @@ input::-ms-clear {
     border-top: 1px solid #ebecf3;
     width: 80%;
     margin-bottom: 15px;
+    cursor: default;
 }
 
 .category-items-td .category-clear-filters {
@@ -2086,6 +2088,13 @@ input::-ms-clear {
     width: 80%;
     margin-bottom: 15px;
     cursor: pointer;
+}
+
+.category-items-td .ellipsis-box {
+    width: 70%;
+    margin-top: -10px;
+    margin-left: 10px;
+    cursor: default;
 }
 
 .category-items-td .not-selected {
@@ -2314,3 +2323,72 @@ input::-ms-clear {
     height: 120px;
 }
 
+/** toggle yes / no button style **/
+
+.toggle {
+    width: 24px;
+    height: 21px;
+    padding-top: -1px;
+    background: #90ee90;
+    display: inline-block;
+    color: #ffffff;
+    border-radius: 60px;
+    padding-left: 24px;
+    cursor: default;
+    transition: all 250ms ease;
+}
+
+.toggle-label {
+    margin-left: 10px;
+    display: inline-block;
+    width: 100px;
+    font-size: 12px;
+}
+
+.toggle.off {
+    background: #e8e8e8;
+    padding-left: 4px;
+    width: 44px;
+}
+
+/** dine-in specific css **/
+
+.dine-in-record {
+    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+    float: left;
+    width: 300px;
+    height: 300px;
+    border: none;
+    padding: 10px;
+    margin: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    cursor: default;
+    position: relative;
+}
+
+.dine-in-record-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.dine-in-cuisines {
+    margin-top: 10px;
+}
+
+.dine-in-record-text {
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.dine-in-address {
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.dine-in-phone {
+    position: absolute;
+    font-size: 12px;
+    bottom: 10px;
+    right: 20px;
+    vertical-align: bottom;
+}

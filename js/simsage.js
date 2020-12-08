@@ -12,11 +12,16 @@ let mt_OperatorMessage = "operator-message";
 
 // db category types
 let cat_type_plain = "category";
+let cat_type_csv = "csv string";
 let cat_type_two_level = "two level category";
 let cat_type_star_rating = "star rating";
 let num_type_money = "monetary x 100 range";
 let num_type_range = "number range";
 let num_type_if_true = "select if true";
+
+// labels for no / yes in yes_no selectors
+let yes_no_no = "no";
+let yes_no_yes = "yes";
 
 //
 // SimSage class, IE 11 compatible
@@ -31,9 +36,6 @@ let search = {
 
     // the currency display symbol
     currency_symbol: "$",
-
-    // how many items maximum to display for a level on category source
-    source_level_one_categories_max_items: 5,
 
     // timeout for office 365 sessions
     session_timeout_in_mins: 59,
@@ -62,6 +64,10 @@ let search = {
     synset_list: [],
     selected_syn_sets: {},
     selected_sliders: {},
+    selected_yes_no: {},
+    // sizes of category displays
+    default_category_size: 5,
+    category_size: {},
     know_email: false,
 
     // category filters
@@ -579,7 +585,7 @@ let search = {
             if (source.id == search.sourceId) {
                 for (let j in source.category_list) {
                     let md = source.category_list[j];
-                    if (md.key === cat_type_plain || md.key === cat_type_two_level) {
+                    if (md.key === cat_type_plain || md.key === cat_type_csv || md.key === cat_type_two_level) {
                         let cats = search.get_category_selections(md);
                         if (cats.length > 0) {
                             data[md.metadata] = ["category"];
@@ -599,7 +605,18 @@ let search = {
                                 data[md.metadata] = ["range", "" + slider.min_value, "" + slider.max_value];
                             }
                         }
+
+                    } else if (md.key === num_type_if_true) {
+                        let slider_name = "yes-no-" + md.metadata;
+                        if (search.selected_yes_no.hasOwnProperty(slider_name)) {
+                            let slider = search.selected_yes_no[slider_name];
+                            // is it set?
+                            if (slider.value > 0.0) {
+                                data[md.metadata] = ["yes"];
+                            }
+                        }
                     }
+
                 }
             }
         }
@@ -651,6 +668,7 @@ let search = {
                     for (let j in source.category_list) {
                         if (source.category_list.hasOwnProperty(j)) {
                             let md = source.category_list[j];
+                            md.filter = "";
                             if (md.minValue || md.maxValue) {
                                 md.left = md.minValue;
                                 md.right = md.maxValue;
@@ -660,6 +678,11 @@ let search = {
                                 let slider = search.selected_sliders[slider_name];
                                 slider.min_value = slider.min;
                                 slider.max_value = slider.max;
+                            }
+                            let yes_no_name = "yes-no-" + md.metadata;
+                            if (search.selected_yes_no.hasOwnProperty(yes_no_name)) {
+                                let slider = search.selected_yes_no[yes_no_name];
+                                slider.value = 0.0;
                             }
                             md.rating = -1;
                             if (md.items) {
@@ -732,7 +755,7 @@ let search = {
 
     // Render a single search-database result
     render_single_search_db_result: function(id, url, title, html) {
-        return "<div class='db-record'>" + html + "</div>";
+        return html;
     },
 
     // render a single image result
@@ -1089,14 +1112,17 @@ let search = {
                                 } else if (cat.key === cat_type_star_rating && cat.displayName) {
                                     str += search.render_star_rating(cat);
 
-                                } else if (cat.key === cat_type_plain && cat.displayName && cat.items && cat.items.length > 0) {
+                                } else if ((cat.key === cat_type_plain || cat.key === cat_type_csv) && cat.displayName && cat.items && cat.items.length > 0) {
                                     str += search.source_category_render_one_level(cat);
 
                                 } else if ((cat.key === num_type_money || cat.key === num_type_range) && cat.displayName) {
                                     str += search.render_slider(cat);
+
+                                } else if (cat.key === num_type_if_true && cat.displayName) {
+                                    str += search.render_yes_no(cat);
                                 }
 
-                            } // if cat is valid
+                        } // if cat is valid
                         } // if has own-property
                     } // for each source category list item
                 } // if has valid category list
@@ -1139,16 +1165,75 @@ let search = {
         return slider_list;
     },
 
+    // render the rhs category item lists
+    get_yes_no: function() {
+        let yes_no_list = [];
+        if (search.filters_visible) {
+            if (search.source && search.source.category_list) {
+                console.log(search.source.category_list);
+                for (let i in search.source.category_list) {
+                    if (search.source.category_list.hasOwnProperty(i)) {
+                        let cat = search.source.category_list[i];
+                        if (cat) {
+                            if (cat.key === num_type_if_true && cat.displayName && cat.metadata) {
+                                let slider = search.selected_yes_no["yes-no-" + cat.metadata];
+                                slider.metadata = "yes-no-" + cat.metadata;
+                                yes_no_list.push(slider);
+                            }
+
+                        } // if cat is valid
+                    } // if has own-property
+                } // for each source category list item
+            } // if has valid category list
+        }
+        return yes_no_list;
+    },
+
     // render a two level category item set
     source_category_render_two_level(cat) {
         let str = "";
         if (cat && cat.key === cat_type_two_level && cat.displayName && cat.items && cat.items.length > 0) {
-            str += "  <div class=\"title-box\">\n" +
-                "       <div class=\"title\">" + esc_html(cat.displayName) + "</div>\n" +
-                "     </div>\n"
+            let dp = esc_html(cat.displayName);
+            let search_text = "Search for " + dp + "...";
+            let type = esc_html(cat.key);
+            let dp_class = "text-" + dp.replace(/ /g, "-");
+            let filter_text = "";
+            if (cat.filter) {
+                filter_text = cat.filter;
+            }
+            let category_size = search.category_size[cat.metadata];
+            let triangle = category_size > 0 ? "&#x25BA; " : "&#x25BC ";
+            let filter_lwr = filter_text.toLowerCase();
+            str += "  <div class=\"title-box\" onclick=\"toggle_category_display_size('" + cat.metadata + "')\">\n" +
+                "       <div class=\"title\">" + triangle + dp + "</div>\n" +
+                "     </div>\n" +
+                "     <div class=\"search-box\">\n" +
+                "       <label><input type=\"text\" class=\"" + dp_class + "\" placeholder=\"" + search_text + "\" value=\"" + filter_text + "\" onkeyup=\"set_one_level_filter('" + dp + "', '" + type + "', '" + dp_class + "');\" /></label>\n" +
+                "     </div>\n";
+            // enough items displayed
+            let item_counter = 0;
+            let has_more = false;
+            let filter_active = filter_text.length > 0;
             for (let ci1 in cat.items) {
+
                 if (cat.items.hasOwnProperty(ci1)) {
                     let item1 = cat.items[ci1];
+
+                    // is this item to be selected?
+                    let filter_selected = false;
+                    if (filter_active && item1.name.toLowerCase().indexOf(filter_lwr) >= 0) {
+                        filter_selected = true;
+                    } else if (filter_active && item1.items && item1.items.length > 0) {
+                        for (let ci2 in item1.items) {
+                            if (item1.items.hasOwnProperty(ci2)) {
+                                let item2 = item1.items[ci2];
+                                if (filter_text.length === 0 || item2.name.toLowerCase().indexOf(filter_lwr) >= 0) {
+                                    filter_selected = true;
+                                }
+                            }
+                        }
+                    }
+
                     if (item1.selected) {
                         str += "  <div class=\"item-box\">\n" +
                             "       <div class=\"top-level-selected\" onclick=\"source_category2_select('" + esc_html(cat.displayName) + "', '" + esc_html(item1.name) + "', '" + esc_html(cat.key) + "')\">" +
@@ -1174,16 +1259,27 @@ let search = {
                             }
                         }
                         str += "</div>\n";
-                    } else {
+                    } else if (filter_selected || (!filter_active && (category_size <= 0 || item_counter < category_size))) {
                         str += "  <div class=\"item-box\" onclick=\"source_category2_select('" + esc_html(cat.displayName) + "', '" + esc_html(item1.name) + "', '" + esc_html(cat.key) + "')\">\n" +
                             "       <div><span class=\"not-selected\" title=\"open category\">&#x25BA;</span>\n" +
                             "         <span class=\"category-head\" title=\"" + esc_html(item1.name) + "\">" + esc_html(item1.name) + "</span>\n" +
                             "         <span class=\"number-box\" title=\"" + esc_html(item1.count) + "\">" + esc_html(item1.count) + "</span>\n" +
                             "       </div>\n" +
                             "     </div>\n";
+                    } else {
+                        has_more = true;
                     }
+
+                    item_counter += 1;
                 }
             }
+
+            // render ellipsis
+            if (has_more && !filter_active) {
+                str += "<div class=\"ellipsis-box\" title=\"there are more items, please use the '" + search_text + "' box to find the item you're looking for\"" +
+                       " onclick=\"toggle_category_display_size('" + cat.metadata + "');\">...</div>";
+            }
+
         } // end of if two-level
         return  str;
     },
@@ -1193,25 +1289,31 @@ let search = {
         let str = "";
         if (cat && cat.displayName && cat.items && cat.items.length > 0) {
             let dp = esc_html(cat.displayName);
+            let search_text = "Search for " + dp + "...";
             let dp_class = "text-" + dp.replace(/ /g, "-");
             let type = esc_html(cat.key);
+            let category_size = search.category_size[cat.metadata];
+            let triangle = category_size > 0 ? "&#x25BA; " : "&#x25BC ";
             let filter_text = "";
             if (cat.filter) {
                 filter_text = cat.filter;
             }
             let filter_lwr = filter_text.toLowerCase();
-            str += "  <div class=\"title-box\">\n" +
-                "       <div class=\"title\">" + dp + "</div>\n" +
+            str += "  <div class=\"title-box\" onclick=\"toggle_category_display_size('" + cat.metadata + "')\">\n" +
+                "       <div class=\"title\">" + triangle + dp + "</div>\n" +
                 "     </div>\n" +
                 "     <div class=\"search-box\">\n" +
-                "       <label><input type=\"text\" class=\"" + dp_class + "\" placeholder=\"Search for " + dp + "...\" value=\"" + filter_text + "\" onkeyup=\"set_one_level_filter('" + dp + "', '" + type + "', '" + dp_class + "');\" /></label>\n" +
+                "       <label><input type=\"text\" class=\"" + dp_class + "\" placeholder=\"" + search_text + "\" value=\"" + filter_text + "\" onkeyup=\"set_one_level_filter('" + dp + "', '" + type + "', '" + dp_class + "');\" /></label>\n" +
                 "     </div>\n";
 
             let item_counter = 0;
+            let has_more = false;
+            let filter_active = filter_text.length > 0;
+            // the non selected items, if there is still room
             for (let ci1 in cat.items) {
                 if (cat.items.hasOwnProperty(ci1)) {
                     let item1 = cat.items[ci1];
-                    if (filter_text.length === 0 || item1.name.toLowerCase().indexOf(filter_lwr) >= 0) {
+                    if (!filter_active || item1.name.toLowerCase().indexOf(filter_lwr) >= 0 || item1.selected) {
                         if (item1.selected) {
                             str += "  <div class=\"item-box\">\n" +
                                 "       <div class=\"top-level-selected\" onclick=\"source_category1_select('" + dp + "', '" + esc_html(item1.name) + "', '" + type + "')\">" +
@@ -1220,33 +1322,29 @@ let search = {
                                 "         <span class=\"number-box\" title=\"" + esc_html(item1.count) + "\">" + esc_html(item1.count) + "</span>\n" +
                                 "       </div>\n" +
                                 "     </div>\n";
-                            item_counter += 1;
-                        }
-                    }
-                }
-            } // for each selected item
-
-            // the non selected items, if there is still room
-            for (let ci1 in cat.items) {
-                if (cat.items.hasOwnProperty(ci1)) {
-                    let item1 = cat.items[ci1];
-                    if (filter_text.length === 0 || item1.name.toLowerCase().indexOf(filter_lwr) >= 0) {
-                        if (!item1.selected && item_counter < search.source_level_one_categories_max_items) {
+                        } else {
                             str += "  <div class=\"item-box\" onclick=\"source_category1_select('" + dp + "', '" + esc_html(item1.name) + "', '" + type + "')\">\n" +
                                 "       <div><span class=\"single-level-box\" title=\"open category\"><input type=\"checkbox\" class=\"single-level-cb\" /></span>\n" +
                                 "         <span class=\"category-head\" title=\"" + esc_html(item1.name) + "\">" + esc_html(item1.name) + "</span>\n" +
                                 "         <span class=\"number-box\" title=\"" + esc_html(item1.count) + "\">" + esc_html(item1.count) + "</span>\n" +
                                 "       </div>\n" +
                                 "     </div>\n";
-                            item_counter += 1;
                         }
+                        item_counter += 1;
                     }
                     // enough items displayed
-                    if (item_counter >= search.source_level_one_categories_max_items) {
+                    if (!filter_active && category_size > 0 && item_counter >= category_size) {
+                        has_more = true;
                         break;
                     }
                 }
             } // for each no-selected item
+
+            // render ellipsis
+            if (has_more) {
+                str += "<div class=\"ellipsis-box\" title=\"there are more items, please use the '" + search_text + "' box to find the item you're looking for\"" +
+                    " onclick=\"toggle_category_display_size('" + cat.metadata + "');\">...</div>";
+            }
 
         } // end of if plain
         return  str;
@@ -1299,6 +1397,30 @@ let search = {
         return "";
     },
 
+    // render a yes no slider
+    render_yes_no: function(cat) {
+        let title = cat.displayName;
+        let dp_class = "yes-no-" + cat.metadata;
+        let yes_no_str = yes_no_no;
+        let toggle_str = "off ";
+        if (search.selected_yes_no.hasOwnProperty(dp_class)) {
+            let s = search.selected_yes_no[dp_class];
+            if (s.value !== 0.0) {
+                yes_no_str = yes_no_yes;
+                toggle_str = "";
+            }
+        }
+        return "   <div class=\"slider-item-box\">\n" +
+            "            <div class=\"slider-title-box\">\n" +
+            "                <div class=\"title\">" + esc_html(title) + "</div>\n" +
+            "            </div>\n\n" +
+            "            <div class=\"slider-body\">\n" +
+            "              <span class=\"toggle " + toggle_str + dp_class + "\" onclick=\"$(this).toggleClass('off'); set_yes_no('" + dp_class + "',!$(this).hasClass('off'));\">&#x2b24;</span>" +
+            "              <label class=\"toggle-label " + dp_class + "-value\">" + yes_no_str + "</label>\n" +
+            "            </div>\n" +
+            "        </div>\n";
+    },
+
     // start the process of moving a slider button
     set_slider: function(metadata, min, max) {
         if (metadata && search.selected_sliders.hasOwnProperty(metadata)) {
@@ -1308,6 +1430,15 @@ let search = {
             if (slider.min < min || slider.max > max) {
                 do_search();
             }
+        }
+    },
+
+    // set the value of a yes/no button
+    set_yes_no: function(metadata, value) {
+        if (metadata && search.selected_yes_no.hasOwnProperty(metadata)) {
+            let slider = search.selected_yes_no[metadata];
+            slider["value"] = value ? 1.0 : 0.0;
+            do_search();
         }
     },
 
@@ -1324,6 +1455,16 @@ let search = {
                 } else {
                     cat.rating = rating; // just set
                 }
+            }
+        }
+    },
+
+    toggle_category_display_size: function(md) {
+        if (md && search.category_size.hasOwnProperty(md)) {
+            if (search.category_size[md] <= 0) {
+                search.category_size[md] = search.default_category_size;
+            } else {
+                search.category_size[md] = 0;
             }
         }
     },
@@ -1658,6 +1799,8 @@ let search = {
         search.is_db_source = false;
         search.sort_list = [];
         search.selected_sliders = {};
+        search.selected_yes_no = {};
+        search.category_size = {};
         for (let i in search.source_list) {
             if (search.source_list.hasOwnProperty(i)) {
                 let source = search.source_list[i];
@@ -1672,10 +1815,13 @@ let search = {
                         for (let j in source.category_list) {
                             if (source.category_list.hasOwnProperty(j)) {
                                 let md = source.category_list[j];
-                                if (md.sort && md.sortAscText && md.sortDescText) {
-                                    search.sort_list.push({"name": md.sortAscText, "metadata": md.metadata, "sort": "asc", "selected": md.sortDefault === "asc"});
+                                if (md.sort && md.sortDescText) {
                                     search.sort_list.push({"name": md.sortDescText, "metadata": md.metadata, "sort": "desc", "selected": md.sortDefault === "desc"});
                                 }
+                                if (md.sort && md.sortAscText) {
+                                    search.sort_list.push({"name": md.sortAscText, "metadata": md.metadata, "sort": "asc", "selected": md.sortDefault === "asc"});
+                                }
+                                search.category_size[md.metadata] = search.default_category_size;
                                 if (md.key === num_type_money || md.key === num_type_range) {
                                     let monetary = (md.key === num_type_money);
                                     let min_value = md.minValue;
@@ -1686,6 +1832,9 @@ let search = {
                                     search.selected_sliders["slider-" + md.metadata] = {"min": min_value, "min_value": min_value,
                                                                                         "max": max_value, "max_value": max_value,
                                                                                         "currency": search.currency_symbol, "monetary": monetary};
+                                } else if (md.key === num_type_if_true) {
+                                    // set the min / max values
+                                    search.selected_yes_no["yes-no-" + md.metadata] = {"value": 0.0};
                                 }
                             }
                         } // for each category
@@ -2313,6 +2462,14 @@ let search = {
                                 query += " range("
                             needsAnd = true;
                             query += metadata + "," + item[1] + "," + item[2] + ")";
+
+                        } else if (item[0] === "yes") {
+                            if (needsAnd)
+                                query += " and num("
+                            else
+                                query += " num("
+                            needsAnd = true;
+                            query += metadata + ",1)";
 
                         } else if (item[0] === "rating") {
                             if (needsAnd)

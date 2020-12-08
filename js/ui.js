@@ -43,11 +43,13 @@ let callback = {
     toggle_filters: function() { search.toggle_filters() },
     clear_filters: function() { search.clear_filters() },
     get_is_db: function() { return search.get_is_db() },
+    toggle_category_display_size: function(md) { search.toggle_category_display_size(md) },
     source_category1_select: function(display_name, category_name, category_type) { search.source_category1_select(display_name, category_name, category_type) },
     source_category2_select: function(display_name, category_name, category_type) { search.source_category2_select(display_name, category_name, category_type) },
     source_category2_l2_select: function(display_name, category_name, category_type) { search.source_category2_l2_select(display_name, category_name, category_type) },
     set_one_level_filter: function(display_name, category_type, filter_text) { search.set_one_level_filter(display_name, category_type, filter_text) },
     set_slider: function(metadata, min, max) { search.set_slider(metadata, min, max) },
+    set_yes_no: function(md, value) { search.set_yes_no(md ,value) },
     select_rating: function(display_name, rating) { search.select_rating(display_name, rating) },
     ////////////////////////////////////////////////////////////////////////////
     // render items
@@ -570,6 +572,11 @@ function setup_categories() {
     jQuery(".category-items-td").html(callback.render_categories());
 }
 
+function toggle_category_display_size(md) {
+    callback.toggle_category_display_size(md);
+    setup_categories();
+}
+
 // select a single level item
 function source_category1_select(display_name, category_name, category_type) {
     callback.source_category1_select(display_name, category_name, category_type);
@@ -765,6 +772,11 @@ function toggle_filters() {
 function clear_filters() {
     callback.clear_filters();
     do_search();
+}
+
+function set_yes_no(md, value) {
+    $("." + md + "-value").html(value ? yes_no_yes : yes_no_no);
+    callback.set_yes_no(md, value);
 }
 
 // on ready add a mouse coord event listener
