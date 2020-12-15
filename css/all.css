@@ -13,6 +13,19 @@ input::-ms-clear {
     margin-right: 5px;
 }
 
+/* no select class - no text selectable */
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* parent of all pop-up dialogs, login, error */
+.dialog-parent {
+    position: relative;
+}
+
 /* search options button */
 
 .search-bar .search-options-button-inner {
@@ -982,9 +995,6 @@ input::-ms-clear {
 /* show details / single search result details view */
 
 .search-details-view {
-}
-
-.search-details {
     position: absolute;
     left: 50px !important;
     z-index: 999;
@@ -1193,9 +1203,8 @@ input::-ms-clear {
 /* Bot reply speech bubble */
 
 .bot-box-view {
-    display: inline-block;
     left: 40px;
-    top: 64px;
+    margin-top: 20px;
     width: calc(77% - 40px) !important;
     cursor: default;
     border: 0 solid;
@@ -1303,14 +1312,10 @@ input::-ms-clear {
 
 
 .search-sign-in {
-    position: relative;
-    left: 25vw;
-    max-width: 1024px;
-}
-
-.search-sign-in-box {
     position: absolute;
     z-index: 999;
+    left: 25vw;
+    max-width: 1024px;
 }
 
 .search-sign-in-area {
@@ -1424,12 +1429,15 @@ input::-ms-clear {
 
 
 .no-search-results {
-    left: 5vw !important;
+    left: 10vw !important;
+    position: absolute;
+    z-index: 998;
     border: 1px solid #878787;
     background-color: #ffffff;
     padding: 20px !important;
     border-radius: 10px;
     width: 600px !important;
+    margin-top: 50px;
 }
 
 .no-search-results:before {
@@ -1570,12 +1578,10 @@ input::-ms-clear {
 /**********************************************************************/
 /*  Error dialog box */
 
-
 .error-dialog-box {
-    position: relative;
+    position: absolute;
     z-index: 999;
     left: 15vw;
-    margin-top: -40px !important;
 }
 
 .error-dialog {
@@ -1950,10 +1956,10 @@ input::-ms-clear {
 /* spelling check reply speech bubble */
 
 .spelling-box-view {
-    display: inline-block;
-    margin-top: -12px;
+    position: absolute;
+    z-index: 990;
     margin-left: 10vw;
-    top: 64px;
+    margin-top: 40px;
     width: calc(50% - 40px) !important;
     cursor: default;
     border: 0 solid;
@@ -2107,6 +2113,10 @@ input::-ms-clear {
     margin-bottom: 5px;
 }
 
+.category-items-td .category-margin {
+    margin-left: 20px;
+}
+
 .category-items-td .category-head {
     font-size: 14px;
     text-transform: capitalize;
@@ -2218,7 +2228,7 @@ input::-ms-clear {
 }
 
 .category-items-td .slider-values {
-    width: 98%;
+    width: 200px;
     font-size: 12px;
     margin-bottom: 10px;
     text-align: center;
@@ -2373,6 +2383,13 @@ input::-ms-clear {
 
 .dine-in-cuisines {
     margin-top: 10px;
+}
+
+.dine-in-image-box {
+    width: 90%;
+    min-height: 100px;
+    text-align: center;
+    padding: 10px;
 }
 
 .dine-in-record-text {

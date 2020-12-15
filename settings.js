@@ -8,6 +8,13 @@ let settings = {
     // the organisation's id to search, change "<organisation>" to...
     organisationId: "<organisation>",
 
+    // do we have an operator?
+    operator_enabled: true,
+    category_size: 5,   // size of category lists
+    page_size: 5,           // number of pages per page in search
+    page_size_custom: 10,   // number of pages per page in custom view
+    currency_symbol: "$",
+
     // search settings
     fragment_count: 3,
     max_word_distance: 20,
