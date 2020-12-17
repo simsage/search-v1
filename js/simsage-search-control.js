@@ -233,7 +233,7 @@ let search_control = {
         for (let i in this.kb_list) {
             if (this.kb_list.hasOwnProperty(i)) {
                 let kb = this.kb_list[i];
-                if (kb.id === kb_id) {
+                if (kb.id == kb_id) {
                     this.kb = kb;
                     for (let j in kb.sourceList) {
                         if (kb.sourceList.hasOwnProperty(j)) {
@@ -265,10 +265,7 @@ let search_control = {
     on_change_source: function(source_id) {
         // make sure we have a valid source-id
         if (source_id === undefined) {
-            source_id = -1;
-            if (this.source_list && this.source_list.length === 1) {
-                source_id = this.source_list[0].id;
-            }
+            source_id = jQuery(".dd-source").val();
         }
         this.source = null;
         this.is_custom_render = false;
