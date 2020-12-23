@@ -176,7 +176,7 @@ let search_control = {
             let dt = this.unix_time_convert(new Date().getTime());
             if (data.hasResult && data.text && data.text.length > 0) {
                 // setup the bot
-                this.show_bot(data.text, data.urlList);
+                this.show_bot(data.text, data.urlList, data.imageList);
             }
 
             // copy the know email flag from our results
@@ -372,7 +372,7 @@ let search_options_control = {
             // wordpress override
             if (settings && settings.kbId && settings.kbId.length > 0) {
                 self.kb = {"name": "wordpress knowledge-base", "id": settings.kbId, "sourceList": []};
-                self.on_change_kb(this.kb.id);
+                self.on_change_kb(self.kb.id);
             } else if (self.kb_list.length > 0) {
                 self.kb = self.kb_list[0];
                 self.on_change_kb(self.kb.id);
@@ -388,6 +388,7 @@ let search_options_control = {
                     self.operator_was_typing(false)
                 }, 1000);
             }
+
         }, function(err) {
             console.log(err);
             if (self.connection_retry_count > 1) {
@@ -498,7 +499,7 @@ let no_results = {
     },
     email_typing: function(event) {
         if (event.keyCode === 13) {
-            do_email();
+            this.do_email();
         }
     },
     // user asks for help
@@ -516,6 +517,7 @@ let no_results = {
             };
             this.post_message('/api/ops/email', emailMessage, function(data) {
                 self.receive_ws_data(data);
+                self.show_no_search_results(); // update display
             });
         } else {
             this.error("invalid email address");
@@ -524,6 +526,7 @@ let no_results = {
 
     show_no_search_results: function() {
         jQuery(".no-search-results").show();
+        jQuery(".search-results").hide();
         if (this.know_email) {
             jQuery(".ask-email-box").hide();
             jQuery(".ask-emailed-box").show();
@@ -741,19 +744,31 @@ let search_bot = {
         return this;
     },
 
-    show_bot: function(text, link_list) {
+    show_bot: function(text, link_list, image_list) {
         jQuery(".bot-reply-text").html(this.esc_html(text));
         let time = this.unix_time_convert(new Date().getTime());
         jQuery(".bot-label-text").html("Bot, " + time);
         jQuery(".bot-box-view").show();
+        // add the links
+        let str = "";
         if (link_list && link_list.length > 0) {
+            if (image_list && image_list.length > 0) {
+                str += "<div title='images' class='bot-images-box'>";
+                for (let i in image_list) {
+                    let link = image_list[i];
+                    if (link) {
+                        str += "<img src=\"" + link + "\" class='bot-image-link' alt='image'" + link + "</img>\n";
+                    }
+                }
+                str += "</div>\n"
+            }
             for (let i in link_list) {
                 let link = link_list[i];
                 if (link) {
-
+                    str += "<div class='bot-link' title='visit " + link + "'\"><a href=\"" + link + "\" target='_blank'>" + link + "</a></div>\n";
                 }
             }
-            jQuery(".bot-links").html("");
+            jQuery(".bot-links").html(str);
         } else {
             jQuery(".bot-links").html("");
         }
@@ -1035,12 +1050,12 @@ let chat_control = {
         let time_str = chat.timeStamp ? search.unix_time_convert(chat.timeStamp) : "";
         if (chat.isSpecialMessage) {
             return "<div class=\"disconnected-box\">\n" +
-                   "<div class=\"disconnected-line\">\n" +
-                   "<span class=\"disconnected-label\">" + this.esc_html(chat.text) + "</span>\n" +
-                   "<span class=\"hyphen\">-</span>\n" +
-                   "<span class=\"time\">" + time_str + "</span>\n" +
-                   "</div>\n" +
-                   "</div>\n";
+                "<div class=\"disconnected-line\">\n" +
+                "<span class=\"disconnected-label\">" + this.esc_html(chat.text) + "</span>\n" +
+                "<span class=\"hyphen\">-</span>\n" +
+                "<span class=\"time\">" + time_str + "</span>\n" +
+                "</div>\n" +
+                "</div>\n";
         } else {
             let text_str = this.esc_html(chat.text ? chat.text : "");
             if (chat.isSimSage) {
@@ -1055,33 +1070,33 @@ let chat_control = {
                     }
                 }
                 return "<div class=\"operator-box\">\n" +
-                       "<div class=\"operator-line\">\n" +
-                       "<span class=\"operator-label\">" + operator_name + "</span>\n" +
-                       "<span class=\"hyphen\">-</span>\n" +
-                       "<span class=\"time\">" + time_str + "</span>\n" +
-                       "</div>\n" +
-                       "<div class=\"operator-text-box\">\n" +
-                       "<div class=\"operator-text\">" + text_str + "</div>\n" +
-                       url_str +
-                       "</div>\n" +
-                       "</div>\n";
+                    "<div class=\"operator-line\">\n" +
+                    "<span class=\"operator-label\">" + operator_name + "</span>\n" +
+                    "<span class=\"hyphen\">-</span>\n" +
+                    "<span class=\"time\">" + time_str + "</span>\n" +
+                    "</div>\n" +
+                    "<div class=\"operator-text-box\">\n" +
+                    "<div class=\"operator-text\">" + text_str + "</div>\n" +
+                    url_str +
+                    "</div>\n" +
+                    "</div>\n";
             } else {
                 return "<div class=\"user-box\">\n" +
-                       "<div class=\"user-line\">\n" +
-                       "<span class=\"user-label\">You</span>\n" +
-                       "<span class=\"hyphen\">-</span>\n" +
-                       "<span class=\"time\">" + time_str + "</span>\n" +
-                       "</div>\n" +
-                       "<div class=\"user-text\">" + text_str + "</div>\n" +
-                       "</div>\n";
+                    "<div class=\"user-line\">\n" +
+                    "<span class=\"user-label\">You</span>\n" +
+                    "<span class=\"hyphen\">-</span>\n" +
+                    "<span class=\"time\">" + time_str + "</span>\n" +
+                    "</div>\n" +
+                    "<div class=\"user-text\">" + text_str + "</div>\n" +
+                    "</div>\n";
             }
         }
     },
 
     render_typing_dots: function() {
         return "<div class=\"left-box-white\">\n" +
-               "<span class=\"typing-dots-box\"><img src=\"" + image_base + "images/dots.gif\" class=\"typing-dots-image\" alt=\"typing\" /></span>\n" +
-               "</div>\n";
+            "<span class=\"typing-dots-box\"><img src=\"" + image_base + "images/dots.gif\" class=\"typing-dots-image\" alt=\"typing\" /></span>\n" +
+            "</div>\n";
     },
 
     render_chats: function() {
@@ -1302,6 +1317,7 @@ let chat_control = {
 let search_results_control = {
 
     show_search_results: function() {
+        jQuery(".search-results").show();
         jQuery(".search-display").show();
         this.close_no_search_results();
     },
@@ -1455,11 +1471,12 @@ let search_results_control = {
             val = val.replace(/{:hl1}/g, "</span>");
             val = val.replace(/{hl2:}/g, "<span class='hl2'>");
             val = val.replace(/{:hl2}/g, "</span>");
-            $(this).html(val);
+            jQuery(this).html(val);
         });
     },
 
     clear_search_results: function() {
+        jQuery(".search-results").hide();
         jQuery(".search-results-td").html("");
     },
 
@@ -1644,4 +1661,3 @@ let domain_control = {
     },
 
 }
-

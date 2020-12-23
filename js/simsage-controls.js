@@ -33,7 +33,7 @@ function clear_controls() {
     if (search && search.do_search) search.do_search();
 }
 
-                                // is this a key CR or Space-bar event that should activate something?
+// is this a key CR or Space-bar event that should activate something?
 function activation(event) {
     return (event && (event.keyCode === 13 || event.keyCode === 32));
 }

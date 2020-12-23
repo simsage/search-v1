@@ -10,7 +10,6 @@ input::-ms-clear {
 }
 
 .search-bar {
-    margin-right: 5px;
 }
 
 /* no select class - no text selectable */
@@ -400,10 +399,14 @@ input::-ms-clear {
 .search-results {
     width: 98% !important;
     border: 0 solid;
+    margin-top: 22px;
+}
+
+.search-results-inside {
     padding: 10px;
     border-radius: 10px;
     background-color: #ffffff;
-    margin-top: 22px;
+    float: left;
 }
 
 .search-results .search-results-top-td {
@@ -1298,7 +1301,19 @@ input::-ms-clear {
 
 .bot-box .bot-link {
     margin-left: 20px;
-    margin-top: 4px;
+    margin-top: 5px;
+}
+
+.bot-box .bot-images-box {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 16px;
+}
+
+.bot-box .bot-image-link {
+    margin: 4px;
+    max-width: 250px;
+    max-height: 250px;
 }
 
 .bot-box .bot-link-text {
@@ -2359,53 +2374,4 @@ input::-ms-clear {
     background: #e8e8e8;
     padding-left: 4px;
     width: 44px;
-}
-
-/** dine-in specific css **/
-
-.dine-in-record {
-    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
-    float: left;
-    width: 300px;
-    height: 300px;
-    border: none;
-    padding: 10px;
-    margin: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    cursor: default;
-    position: relative;
-}
-
-.dine-in-record-title {
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.dine-in-cuisines {
-    margin-top: 10px;
-}
-
-.dine-in-image-box {
-    width: 90%;
-    min-height: 100px;
-    text-align: center;
-    padding: 10px;
-}
-
-.dine-in-record-text {
-    font-size: 12px;
-    margin-bottom: 10px;
-}
-
-.dine-in-address {
-    margin-top: 10px;
-    font-size: 12px;
-}
-
-.dine-in-phone {
-    position: absolute;
-    font-size: 12px;
-    bottom: 10px;
-    right: 20px;
-    vertical-align: bottom;
 }
