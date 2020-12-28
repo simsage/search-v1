@@ -70,15 +70,15 @@ NB. you will need to copy all files in `js`, `css`, and `template` to your own s
 | category_size | The number of items to display in the UI category displays per category. | 5 |
 | page_size | The number of search results to return for a semantic-search | 5 |
 | page_size_custom | The number of search results to return for a e-commerce searches | 10 |
-| currency_symbol | The currency symbol to prefix monetary amounts with in e-commerce searches | 10 |
+| currency_symbol | The currency symbol to prefix monetary amounts with in e-commerce searches | $ |
 | fragment_count | the number of sub-semantic search results to display for each search result | 3 |
 | max_word_distance | If greater than zero, the maximum allowed distance of individual keywords in sentences for `hits` | 20 |
 | use_spelling_suggest | A boolean flag specifying use of the SimSage spelling correction system | false |
-| context_label | Obsolete, a forced context label for this search control's initial context value | '' (empty string) |
+| context_label | Obsolete, a forced context label for this search control's initial context value | (empty string) |
 | context_match_boost | Obsolete, a score boost value to apply when context labels match on top of semantic-search scores | 0.02 |
 | bot_threshold | SimSage's Q&A sensitivity, a value between 0.0 and 1.0.  If you set this number too low, you'll get nonsense responses, if you set it too high, you'll only get exact results.  | 0.8125 |
 | show_advanced_filter | A boolean value specifying whether the UI should display the `Search options` drop down menu located left of the search-bar | true |
-| search_placeholder | A `placeholder` HTML value for the SimSage search control. | '' (empty string) |
+| search_placeholder | A `placeholder` HTML value for the SimSage search control. | (empty string) |
 
 ## test with a local http server (optional)
 ```
