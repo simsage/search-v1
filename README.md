@@ -5,6 +5,8 @@
 
 You can download all the files referenced below from this repository.
 
+NB. you will need to copy all files in `js`, `css`, and `template` to your own site for this to work.
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
