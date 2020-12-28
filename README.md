@@ -13,16 +13,19 @@ You can download all the files referenced below from this repository.
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- load jQuery and jQuery ui min required by SimSage (tested up to jQuery 3.4.1) -->
+    <!-- load jQuery and jQuery ui min required by SimSage (tested up to jQuery 3.4.1) [required] -->
     <script src="js/jquery-3.4.1.min.js"></script>
     <script src="js/jquery-ui.min.js"></script>
+    <!-- if you're using our operator, you must include these two javascript files.  If not, you can leave these two files out -->
+    <script src="js/sockjs.js"></script>
+    <script src="js/stomp.js"></script>
 
-    <!-- load the required jQuery ui style-sheet -->
+    <!-- load the required jQuery-ui style-sheet [required] -->
     <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css" />
 
-    <!-- load SimSage style sheet -->
+    <!-- load SimSage style sheet [required] -->
     <link rel="stylesheet" type="text/css" href="css/simsage-search.css" />
-    <!-- load SimSage javascript code -->
+    <!-- load SimSage javascript code [required] -->
     <script src="js/simsage-search.js"></script>
 
     <!-- load an example favorite icon for your page -->
@@ -31,7 +34,7 @@ You can download all the files referenced below from this repository.
 </head>
 <body>
 
-<!-- the SimSage search control holder -->
+<!-- the SimSage search control holder, this is where the control goes after a successful init() -->
 <div id="simsage-search-control">
 </div>
 
@@ -43,11 +46,8 @@ You can download all the files referenced below from this repository.
         simsage.init("#simsage-search-control", {
             // the SimSage api server - set to eg. https://cloud.simsage.ai   (no trailing /)
             base_url: 'https://cloud.simsage.ai',
-            // the SimSage resources location - set to eg.  https://cdn.jsdelivr.net/gh/simsage-nz/search
-            // or your own server if you serve these files yourself
-            resource_url: 'https://cdn.jsdelivr.net/gh/simsage-nz/search@5.4.2',
             // your SimSage organisation id (a guid, eg. c276f883-e0c8-43ae-9119-df8b7df9c574)
-            // you get this value after registering a SimSage account, this is your user id
+            // you get this value after registering a SimSage account, this is your user id in our WordPress plugin
             organisation_id: 'c276f883-e0c8-43ae-9119-df8b7df9c574'
         });
     })
@@ -63,7 +63,6 @@ You can download all the files referenced below from this repository.
 | variable | meaning | default value |
 | --- | --- | --- |
 | base_url | the SimSage remote search server you have an account with.  This will be an HTTPS:// connection and the server's URL starts with `cloud` | https://cloud.simsage.ai |
-| resource_url | the search interface loads `socksjs.js` and `stomp.js` javascript files to be used in conjunction with SimSage for operator functionality (if enabled).  This is the location of a server where SimSage can find these files. | https://cdn.jsdelivr.net/gh/simsage-nz/search | 
 | organisation_id | all SimSage accounts have an organisation-id.  This value is a guid you get assigned when you register your account and uniquely represents search access to your data. | c276f883-e0c8-43ae-9119-df8b7df9c574 |
 | operator_enabled | A boolean flag specifying `true` or `false` to tell SimSage to connect to the operator javascript-socket interfaces.  This will only work if your plan supports operators. | true |
 | category_size | The number of items to display in the UI category displays per category. | 5 |

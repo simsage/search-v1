@@ -1406,7 +1406,6 @@ let simsage = {
 
     // the service layer end-point, change "<server>" to ... (no / at end)
     base_url: "https://cloud.simsage.ai",
-    resource_url: "https://cdn.jsdelivr.net/gh/simsage-nz/search",
     // api version of ws_base
     api_version: 1,
     // the organisation's id to search, change "<organisation>" to...
@@ -1752,17 +1751,11 @@ let search_options_control = {
             console.error("SimSage init() failed, settings must be set with an 'organisation_id' and a 'base_url'")
             return null;
         }
-        // is there a different code fetch url from the base url?
-        if (settings.resource_url) {
-            this.resource_url = settings.resource_url;
-        } else {
-            this.resource_url = settings.base_url;
-        }
         // get the settings we do have
         this.base_url = settings.base_url;
         this.organisationId = settings.organisation_id;
         // load the render template
-        jQuery(control_id).load(this.resource_url + "/simsage-search.html");
+        jQuery(control_id).load("template/simsage-search.html");
         // get possible setting overrides
         // do we have an operator?
         if (typeof settings.operator_enabled === "boolean") this.operator_enabled = settings.operator_enabled;
@@ -1842,30 +1835,8 @@ let search_options_control = {
             self.connection_retry_count = 1;
             self.busy(false);
             if (self.operator_enabled) {
-                // load required js files (if not already loaded)
-                if(typeof SockJS === "undefined") {
-                    $.ajax({
-                        url: self.resource_url + "/js/sockjs.js",
-                        dataType: "script",
-                        cache: true,
-                        success: function() {
-                            console.debug("loaded socks.js");
-                            $.ajax({
-                                url: self.resource_url + "/js/stomp.js",
-                                dataType: "script",
-                                cache: true,
-                                success: function() {
-                                    // connect to the socket system
-                                    console.debug("loaded stomp.js");
-                                    self.connect_ws();
-                                }
-                            });
-                        }
-                    });
-                } else {
-                    // connect to the socket system
-                    self.connect_ws();
-                }
+                // connect to the socket system
+                self.connect_ws();
                 // setup is-typing check
                 window.setInterval(function () {
                     self.operator_was_typing(false)
