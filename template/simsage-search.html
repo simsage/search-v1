@@ -1,4 +1,4 @@
-<div style="font-family: 'Lucinda Grande', 'Lucinda Sans Unicode', Helvetica, Arial, Verdana, sans-serif;">
+<div class="simsage-search">
     <div class="search-bar">
 
         <!-- search options button, menu and chevron -->
@@ -40,25 +40,6 @@
                                 </td>
                                 <td class="col-2 sign-out-text" style="display: none;">
                                     <span class="clear-text" title="sign-out" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" onclick="simsage.do_sign_out()">sign-out</span>
-                                </td>
-
-                                <td class="col-1">
-                                    <span class="category-text">Document Type</span>
-                                    <div class="category-item">
-                                        <label class="document-type-sel select-wrapper">
-                                            <select name="document-type" class="category-select" onchange="" tabindex="0">
-                                                <option value="">All Document Types</option>
-                                                <option value="html,htm">Web</option>
-                                                <option value="doc,docx">Word</option>
-                                                <option value="pdf">PDF</option>
-                                                <option value="xls,xlsx">Excel</option>
-                                                <option value="jpg,jpeg,png,gif">Images</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </td>
-                                <td class="col-2">
-                                    <span class="clear-text" title="Clear Document Type" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" onclick="simsage.reset_document_type()">Clear</span>
                                 </td>
 
                                 <td class="col-1 knowledge-base-selector" style="display: none;">
@@ -116,7 +97,7 @@
                     </div>
                     <div class="bar-bottom">
                     <span class="clear-text-box">
-                        <span class="clear-all-text" title="Clear all" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" onclick="simsage.clear_all()">Clear all</span>
+                        <span class="clear-all-text" title="Clear all" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" onclick="simsage.clear_all(); simsage.clear_source();">Clear all</span>
                     </span>
                         <span class="done-button" title="Done" onclick="simsage.hide_menu()">
                         <span tabindex="0" onkeyup="if (activation(event)) simsage.hide_menu(event)" class="done-text">Done</span>
@@ -129,25 +110,23 @@
 
         <!-- search box -->
         <div class="search-box-container">
-            <div class="search-text-box">
-                <label class="search-text-label" title="ask SimSage">
-                    <input type="text" value="" autocomplete="false" class="search-text" maxlength="100" onkeyup="simsage.search_typing(event)">
-                </label>
-            </div>
+            <form class="search-form" onkeydown="let keyCode = event.keyCode || event.which; if (keyCode === 13) {event.preventDefault(); return false;}">
+                <div class="search-text-box">
+                    <label class="search-text-label" title="ask SimSage">
+                        <input type="text" value="" autocomplete="false" readonly onfocus="this.removeAttribute('readonly');" class="search-text" maxlength="100" onkeyup="simsage.search_typing(event)">
+                    </label>
+                </div>
 
-            <!-- search clear (cross) -->
-            <div class="clear-search-button-box" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" title="clear your query" onclick="simsage.clear_search()">
-            <span class="search-button-span-box">
-                <span class="clear-button-image">&times;</span>
-            </span>
-            </div>
+                <!-- search clear (cross) -->
+                <div class="clear-search-button-box" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" title="clear your query" onclick="simsage.clear_search()">
+                <span class="search-button-span-box">
+                    <span class="clear-button-image">&times;</span>
+                </span>
+                </div>
 
-            <!-- search button -->
-            <div class="search-button-box" title="query SimSage" onclick="simsage.do_search()">
-            <span class="search-button-box-text">
-                SEARCH
-            </span>
-            </div>
+                <!-- search button -->
+                <button class="search-button-box" title="query SimSage, start finding" onclick="event.preventDefault(); simsage.do_search(); return false;">SEARCH</button>
+            </form>
         </div>
     </div>
 

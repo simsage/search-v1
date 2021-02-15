@@ -1,6 +1,12 @@
 
 # using SimSage search
 
+## uglify (minify) js
+
+installation: `npm install uglify-js -g`
+
+usage: `uglifyjs --compress --mangle -- js/simsage-search.js > js/simsage-search.min.js`
+
 ## include SimSage styles and javascript in your own html
 
 You can download all the files referenced below from this repository.
@@ -79,7 +85,7 @@ NB. you will need to copy all files in `js`, `css`, and `template` to your own s
 | bot_threshold | SimSage's Q&A sensitivity, a value between 0.0 and 1.0.  If you set this number too low, you'll get nonsense responses, if you set it too high, you'll only get exact results.  | 0.8125 |
 | show_advanced_filter | A boolean value specifying whether the UI should display the `Search options` drop down menu located left of the search-bar | true |
 | search_placeholder | A `placeholder` HTML value for the SimSage search control. | (empty string) |
-
+| is_wordpress | is this to be used in WordPress?  WordPress has a different render method. | false |
 ## test with a local http server (optional)
 ```
 npm install http-server -g

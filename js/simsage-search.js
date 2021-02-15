@@ -7,6 +7,7 @@ let cat_type_two_level = "two level category";
 let cat_type_star_rating = "star rating";
 let num_type_money = "monetary x 100 range";
 let num_type_range = "number range";
+let num_type_date = "date range";
 let num_type_if_true = "select if true";
 
 // labels for no / yes in yes_no selectors
@@ -23,6 +24,8 @@ let simsage_control_list = [];
 let simsage_sort_list = [];
 // visibility of the controls (> Filters)
 let controls_visible = true;
+// size of one-level and two-level categories (max items)
+let default_category_size = 5;
 
 // execute "clear" on all the controls if they support it
 function clear_controls() {
@@ -38,6 +41,22 @@ function activation(event) {
     return (event && (event.keyCode === 13 || event.keyCode === 32));
 }
 
+function pad2(item) {
+    return ("" + item).padStart(2, '0');
+}
+
+// unix-date-time / 1000 to year/month/day string
+function to_date_str(value) {
+    if (value && typeof value === 'number') {
+        let a = new Date(value * 1000);
+        let year = a.getUTCFullYear();
+        let month = a.getUTCMonth() + 1;
+        let date = a.getUTCDate();
+        return year + '/' + pad2(month) + '/' + pad2(date);
+    }
+    return "";
+}
+
 // execute "get_metadata" on all the controls if they support it
 function get_metadata() {
     let data = {};
@@ -47,20 +66,13 @@ function get_metadata() {
     }
     for (let i in simsage_sort_list) {
         let item = simsage_sort_list[i];
-        if (item.selected && item.metadata && item.sort) {
+        // best-match is default and doesn't need a sort indicator
+        if (item.selected && item.metadata !== 'best-match' && item.sort) {
             data["sort"] = [item.metadata, item.sort];
             break;
         }
     }
     return data;
-}
-
-// set the semantic-display categories dynamically
-function set_display_categories(semantic_set) {
-    for (let i in simsage_control_list) {
-        let c = simsage_control_list[i];
-        if (c.set_semantic_set) c.set_semantic_set(semantic_set);
-    }
 }
 
 // set the syn-sets dynamically
@@ -85,25 +97,28 @@ function toggle_filters() {
 // only call this once on startup / document-ready
 function setup_controls(control_data_list) {
     // setup render containers - the holders of each control by metadata-name
-    let container_str = "<div class='no-select'>";
-    container_str += "<span class=\"category-items-dropdown-header\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"toggle_filters()\" title='show or hide the filters'>" + (controls_visible ? triangle_open : triangle_close) + " Filters</span>";
-    container_str += "<span class=\"category-clear-filters\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"clear_controls()\" title=\"reset all items below to their default values\">&#x1f5d8; Clear filters</span>";
-    container_str += "</div>";
+    let container_str = ""
+    if (control_data_list && control_data_list.length > 0) {
+        container_str += "<div class='no-select'>";
+        container_str += "<span class=\"category-items-dropdown-header\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"toggle_filters()\" title='show or hide the filters'>" + (controls_visible ? triangle_open : triangle_close) + " Filters</span>";
+        container_str += "<span class=\"category-clear-filters\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"clear_controls()\" title=\"reset all items below to their default values\">&#x1f5d8; Clear filters</span>";
+        container_str += "</div>";
 
-    container_str += "<div class='category-control-container no-select'>"
-    // add syn-set container
-    container_str += "<div class='syn-sets'></div>"
-    // add controls according to their data requirements
-    for (let i in control_data_list) {
-        let c = control_data_list[i];
-        if (c && c.metadata) {
-            let ctrl_name = "c-" + c.metadata;
-            container_str += "<div class='" + ctrl_name + "'></div>"
+        container_str += "<div class='category-control-container no-select'>"
+        // add syn-set container
+        container_str += "<div class='syn-sets'></div>"
+        // add controls according to their data requirements
+        for (let i in control_data_list) {
+            let c = control_data_list[i];
+            if (c && c.metadata) {
+                let ctrl_name = "c-" + c.metadata;
+                container_str += "<div class='" + ctrl_name + "'></div>"
+            }
         }
+        // add semantic display category container
+        container_str += "<div class='semantic-display-categories'></div>"
+        container_str += "</div>"
     }
-    // add semantic display category container
-    container_str += "<div class='semantic-display-categories'></div>"
-    container_str += "</div>"
     // this is the super parent of each control 'category-items-td'
     $(".category-items-td").html(container_str);
     // add the semantic set control
@@ -113,29 +128,31 @@ function setup_controls(control_data_list) {
     for (let i in control_data_list) {
         let c = control_data_list[i];
         if (c && c.metadata) {
-            if (c.key === cat_type_plain || c.key === cat_type_csv)
+            if (c.categoryType === cat_type_plain || c.categoryType === cat_type_csv)
                 simsage_control_list.push(one_level_control.instantiate(c));
-            if (c.key === cat_type_two_level)
+            if (c.categoryType === cat_type_two_level)
                 simsage_control_list.push(two_level_control.instantiate(c));
-            if (c.key === cat_type_star_rating)
+            if (c.categoryType === cat_type_star_rating)
                 simsage_control_list.push(star_rating_control.instantiate(c));
-            if (c.key === num_type_if_true)
+            if (c.categoryType === num_type_if_true)
                 simsage_control_list.push(yes_no_control.instantiate(c));
-            if (c.key === num_type_range || c.key === num_type_money)
+            if (c.categoryType === num_type_range || c.categoryType === num_type_money || c.categoryType === num_type_date)
                 simsage_control_list.push(slider_control.instantiate(c));
         }
     }
-    // add the semantic set control
-    simsage_control_list.push(display_categories_control.instantiate());
+    // normal search?
+    if (simsage.has_categories && !simsage.is_custom_render) {
+        simsage_sort_list.push({"name": "best search match", "metadata": "best-match", "sort": "desc", "selected": true});
+    }
     // setup sorting if applicable
     for (let j in control_data_list) {
         if (control_data_list.hasOwnProperty(j)) {
             let md = control_data_list[j];
             if (md.sort && md.sortDescText) {
-                simsage_sort_list.push({"name": md.sortDescText, "metadata": md.metadata, "sort": "desc", "selected": md.sortDefault === "desc"});
+                simsage_sort_list.push({"name": md.sortDescText, "metadata": md.metadata, "sort": "desc", "selected": (md.sortDefault === "desc" && this.is_custom_render)});
             }
             if (md.sort && md.sortAscText) {
-                simsage_sort_list.push({"name": md.sortAscText, "metadata": md.metadata, "sort": "asc", "selected": md.sortDefault === "asc"});
+                simsage_sort_list.push({"name": md.sortAscText, "metadata": md.metadata, "sort": "asc", "selected": (md.sortDefault === "asc"  && this.is_custom_render)});
             }
         }
     } // for each category
@@ -225,7 +242,7 @@ let common_functions = {
             return false;
         }
     },
-    get_client_id() {
+    get_client_id: function() {
         let clientId = "";
         let key = 'simsearch_client_id';
         let hasLs = this.has_local_storage();
@@ -240,13 +257,13 @@ let common_functions = {
         }
         return clientId;
     },
-    get_kb() {
+    get_kb: function() {
         if (simsage && simsage.kb) {
             return simsage.kb;
         }
         return null;
     },
-    get_kb_id() {
+    get_kb_id: function() {
         let kb = this.get_kb();
         if (kb && kb.id) {
             return kb.id;
@@ -315,12 +332,12 @@ let common_functions = {
     unix_time_convert: function(timestamp) {
         if (timestamp > 1000) {
             let a = new Date(timestamp);
-            let year = a.getFullYear();
-            let month = a.getMonth() + 1;
-            let date = a.getDate();
-            let hour = a.getHours();
-            let min = a.getMinutes();
-            let sec = a.getSeconds();
+            const year = a.getUTCFullYear();
+            const month = a.getUTCMonth() + 1;
+            const date = a.getUTCDate();
+            const hour = a.getUTCHours();
+            const min = a.getUTCMinutes();
+            const sec = a.getUTCSeconds();
             return year + '/' + this.pad2(month) + '/' + this.pad2(date) + ' ' + this.pad2(hour) + ':' + this.pad2(min) + ':' + this.pad2(sec);
         }
         return "";
@@ -344,7 +361,7 @@ let common_functions = {
             }
         }).fail(function (err) {
             console.error(JSON.stringify(err));
-            this.error(err);
+            simsage.error(err);
         });
     },
     // get a message
@@ -395,9 +412,9 @@ let one_level_control = {
     items: [], // selected: boolean, name: string, count: int, items: []
     filter: "",
     metadata: "",
-    category_size: this.category_size,
+    category_size: default_category_size,
 
-    instantiate(cat) {
+    instantiate: function(cat) {
         let copy = jQuery.extend({}, one_level_control);
         jQuery.extend(copy, common_functions);
         copy.displayName = cat.displayName;
@@ -418,7 +435,7 @@ let one_level_control = {
     },
 
     // reset this control
-    clear() {
+    clear: function() {
         for (let j in this.items) {
             this.items[j].selected = false;
         }
@@ -428,37 +445,36 @@ let one_level_control = {
     // add metadata description for this control to data[this.metadata]
     get_metadata: function(data) {
         if (data) {
-            let selection = [];
+            let selection = ["category"];
             for (let i1 in this.items) {
                 let ci1 = this.items[i1];
                 if (ci1 && ci1.selected && ci1.name) {
                     selection.push(ci1.name);
                 }
             }
-            if (selection.length > 0) {
-                data[this.metadata] = ["category"];
-                data[this.metadata].push(...selection);
+            if (selection.length > 1) {
+                data[this.metadata] = selection;
             }
         }
     },
 
-    toggle_category() {
+    toggle_category: function() {
         if (this.category_size <= 0) {
-            this.category_size = this.category_size;
+            this.category_size = default_category_size;
         } else {
             this.category_size = 0;
         }
         this.render();
     },
 
-    set_filter() {
+    set_filter: function() {
         let item_class = ".t-" + this.metadata;
         this.filter = jQuery(item_class).val();
         this.render();
         exec('focus_text', this.metadata, item_class);
     },
 
-    select_category(category_name) {
+    select_category: function(category_name) {
         for (let j in this.items) {
             let item1 = this.items[j];
             if (item1.name === category_name) {
@@ -470,7 +486,7 @@ let one_level_control = {
     },
 
     // render a one level category item set
-    render() {
+    render: function() {
         let str = "";
         if (this.displayName && this.items && this.items.length > 0) {
             let dp = this.esc_html(this.displayName);
@@ -546,9 +562,9 @@ let two_level_control = {
     items: [], // selected: boolean, name: string, count: int, items: []
     filter: "",
     metadata: "",
-    category_size: this.category_size,
+    category_size: default_category_size,
 
-    instantiate(cat) {
+    instantiate: function(cat) {
         let copy = jQuery.extend({}, two_level_control);
         jQuery.extend(copy, common_functions);
         copy.displayName = cat.displayName;
@@ -575,7 +591,7 @@ let two_level_control = {
     },
 
     // reset this control
-    clear() {
+    clear: function() {
         for (let i in this.items) {
             let item1 = this.items[i];
             item1.selected = false;
@@ -591,7 +607,7 @@ let two_level_control = {
     // add metadata description for this control to data[this.metadata]
     get_metadata: function(data) {
         if (data) {
-            let selection = [];
+            let selection = ["category"];
             for (let i1 in this.items) {
                 let ci1 = this.items[i1];
                 if (ci1 && ci1.selected) {
@@ -610,30 +626,29 @@ let two_level_control = {
                     }
                 }
             }
-            if (selection.length > 0) {
-                data[this.metadata] = ["category"];
-                data[this.metadata].push(...selection);
+            if (selection.length > 1) {
+                data[this.metadata] = selection;
             }
         }
     },
 
-    toggle_category() {
+    toggle_category: function() {
         if (this.category_size <= 0) {
-            this.category_size = this.category_size;
+            this.category_size = default_category_size;
         } else {
             this.category_size = 0;
         }
         this.render();
     },
 
-    set_filter() {
+    set_filter: function() {
         let item_class = ".t-" + this.metadata;
         this.filter = jQuery(item_class).val();
         this.render();
         exec('focus_text', this.metadata, item_class);
     },
 
-    select_category_1(category_name) {
+    select_category_1: function(category_name) {
         if (this.items) {
             for (let j in this.items) {
                 let item1 = this.items[j];
@@ -653,7 +668,7 @@ let two_level_control = {
         if (simsage && simsage.do_search) simsage.do_search();
     },
 
-    select_category_2(category_name) {
+    select_category_2: function(category_name) {
         if (this.items) {
             for (let j in this.items) {
                 let item1 = this.items[j];
@@ -674,7 +689,7 @@ let two_level_control = {
     },
 
     // render a two level category item set
-    render() {
+    render: function() {
         let str = "";
         if (this.displayName && this.items && this.items.length > 0) {
             let dp = this.esc_html(this.displayName);
@@ -770,7 +785,7 @@ let star_rating_control = {
     metadata: "",
     rating: -1, // no rating
 
-    instantiate(cat) {
+    instantiate: function(cat) {
         let copy = jQuery.extend({}, star_rating_control);
         jQuery.extend(copy, common_functions);
         copy.displayName = cat.displayName;
@@ -782,13 +797,13 @@ let star_rating_control = {
     },
 
     // reset this control
-    clear() {
+    clear: function() {
         this.rating = -1;
         this.render();
     },
 
     // add metadata description for this control to data[this.metadata]
-    get_metadata(data) {
+    get_metadata: function(data) {
         if (data && this.rating >= 0 && this.rating <= 5) {
             data[this.metadata] = ["rating", "" + this.rating];
         }
@@ -841,7 +856,7 @@ let yes_no_control = {
     metadata: "",
     value: 0.0,
 
-    instantiate(cat) {
+    instantiate: function(cat) {
         let copy = jQuery.extend({}, yes_no_control);
         jQuery.extend(copy, common_functions);
         copy.displayName = cat.displayName;
@@ -853,13 +868,13 @@ let yes_no_control = {
     },
 
     // reset this control
-    clear() {
+    clear: function() {
         this.value = 0.0;
         this.render();
     },
 
     // add metadata description for this control to data[this.metadata]
-    get_metadata(data) {
+    get_metadata: function(data) {
         if (data && this.value > 0.0) {
             data[this.metadata] = ["yes"];
         }
@@ -916,14 +931,15 @@ let slider_control = {
     min_value: 0.0,
     max_value: 0.0,
     monetary: false,
-    currency_symbol: this.currency_symbol,
 
-    instantiate(cat) {
+    instantiate: function(cat) {
+        console.log(cat);
         let copy = jQuery.extend({}, slider_control);
         jQuery.extend(copy, common_functions); // add common utils for SimSage controls
         copy.displayName = cat.displayName;
         copy.metadata = cat.metadata;
-        copy.monetary = cat.key === num_type_money;
+        copy.monetary = cat.categoryType === num_type_money;
+        copy.date = cat.categoryType === num_type_date;
         if (cat.minValue) {
             copy.min = cat.minValue;
         }
@@ -936,7 +952,7 @@ let slider_control = {
     },
 
     // reset this control
-    clear() {
+    clear: function() {
         this.min_value = this.min;
         this.max_value = this.max;
         let ctrl = jQuery(".slider-" + this.metadata);
@@ -946,7 +962,7 @@ let slider_control = {
     },
 
     // add metadata description for this control to data[this.metadata]
-    get_metadata(data) {
+    get_metadata: function(data) {
         if (data && this.min_value > this.min || this.max_value < this.max) {
             data[this.metadata] = ["range", "" + this.min_value, "" + this.max_value];
         }
@@ -956,8 +972,11 @@ let slider_control = {
         let left = parseInt(this.min_value);
         let right = parseInt(this.max_value);
         if (this.monetary) {
-            left = this.currency_symbol + (left * 0.01).toFixed(2);
-            right = this.currency_symbol + (right * 0.01).toFixed(2);
+            left = simsage.currency_symbol + (left * 0.01).toFixed(2);
+            right = simsage.currency_symbol + (right * 0.01).toFixed(2);
+        } else if (this.date) {
+            left = to_date_str(left);
+            right = to_date_str(right);
         }
         $(".slider-" + this.metadata + "-value").html(left + " - " + right);
     },
@@ -1014,73 +1033,6 @@ let slider_control = {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// the semantic-display-categories
-// display the set of semantic items (usually in the semantic_set array) on the side
-//
-let display_categories_control = {
-
-    items: [], // the list of semantic-display items in their order
-    metadata: "semantic-set-control",
-
-    instantiate() {
-        let copy = jQuery.extend({}, display_categories_control);
-        jQuery.extend(copy, common_functions);
-        copy.items = [];
-        return copy;
-    },
-
-    // give the controls their value
-    set_semantic_set(semantic_set) {
-        if (semantic_set) {
-            this.items = semantic_set;
-        }
-        this.render();
-    },
-
-    // perform the click replace / insert trick
-    toggle_word_in_search(word) {
-        let ctrl = jQuery(".search-text");
-        let text = ctrl.val();
-        if (text) {
-            let current_text = " " + text + " ";
-            if (current_text.indexOf(" " + word + " ") >= 0) {
-                current_text = current_text.replace(" " + word + " ", " ");
-            } else {
-                current_text = current_text + " " + word;
-            }
-            ctrl.val(current_text.trim());
-        }
-    },
-
-    // render a one level category item set
-    render() {
-        let str = "";
-        for (let key in this.items) {
-            if (this.items.hasOwnProperty(key)) {
-                str += "<div class=\"title-box\">\n" +
-                    "<div class=\"title\">" + key + "</div>\n" +
-                    "</div>\n";
-                let value_list = this.items[key];
-                for (let j in value_list) {
-                    if (value_list.hasOwnProperty(j)) {
-                        let item1 = value_list[j];
-                        str += "<div class=\"item-box category-margin\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"exec('toggle_word_in_search','" + this.metadata + "','" + this.esc_html(item1.word) + "')\">\n" +
-                            "<div>\n" +
-                            "<span class=\"category-head\" title=\"further refine your search using '" + this.esc_html(item1.word) + "'\">" + this.esc_html(item1.word) + "</span>\n" +
-                            "<span class=\"number-box\" title=\"'" + this.esc_html(item1.word) + "' has a frequency of " + this.esc_html(item1.frequency) + " in these results\">" + this.esc_html(item1.frequency) + "</span>\n" +
-                            "</div>\n" +
-                            "</div>\n";
-                    }
-                }
-            }
-        } // end of for key
-        jQuery(".semantic-display-categories").html(str);
-    },
-
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
 // syn-set selector
 //
 let syn_set_control = {
@@ -1088,7 +1040,7 @@ let syn_set_control = {
     items: [], // the list of synset display items
     metadata: "syn-set-control",
 
-    instantiate() {
+    instantiate: function() {
         let copy = jQuery.extend({}, syn_set_control);
         jQuery.extend(copy, common_functions);
         copy.items = [];
@@ -1096,7 +1048,7 @@ let syn_set_control = {
     },
 
     // reset this control
-    clear() {
+    clear: function() {
         for (let j in this.items) {
             this.items[j].selected = -1;
         }
@@ -1104,16 +1056,15 @@ let syn_set_control = {
     },
 
     // give the controls their value
-    set_syn_sets(syn_sets) {
+    set_syn_sets: function(syn_sets) {
         if (syn_sets && syn_sets.length > 0) {
             this.items = syn_sets;
         }
         this.render();
-        if (simsage && simsage.do_search) simsage.do_search();
     },
 
     // return a lookup word -> selected (if selected)
-    get_selected_syn_sets() {
+    get_selected_syn_sets: function() {
         let syn_set_dictionary = {};
         for (let key in this.items) {
             let item = this.items[key];
@@ -1167,7 +1118,7 @@ let syn_set_control = {
     },
 
     // select an item
-    select_syn_set(word) {
+    select_syn_set: function(word) {
         if (word && word.length > 0) {
             let selected = parseInt(jQuery(".synset-selector-" + word).val());
             if (selected >= 0 || selected === -1) {
@@ -1210,7 +1161,7 @@ let syn_set_control = {
     },
 
     // render a series of syn-set items
-    render() {
+    render: function() {
         let str = "";
         if (this.items && this.items.length > 0) {
             for (let key in this.items) {
@@ -1236,7 +1187,7 @@ function cleanup_query_text(text) {
 }
 
 // helper: turn search-options, text, and custom-rendering data into a super-query string
-function super_search_query_str(text, search_options_data, is_custom_render) {
+function super_search_query_str(text, search_options_data, has_categories) {
     let query = "(";
     let needsAnd = false;
     if (text.length > 0) {
@@ -1292,24 +1243,8 @@ function super_search_query_str(text, search_options_data, is_custom_render) {
         }
         query += ") "
     }
-    if (af.document_type && af.document_type.length > 0 && af.document_type[0].length > 0) {
-        if (needsAnd)
-            query += " and (";
-        else
-            query += " (";
-        needsAnd = true;
-        for (let i in af.document_type) {
-            if (i > 0) {
-                query += " or "
-            }
-            if (af.document_type.hasOwnProperty(i)) {
-                query += "type: " + af.document_type[i];
-            }
-        }
-        query += ") "
-    }
-    // db parameters?
-    if (is_custom_render) {
+    // category parameters?
+    if (has_categories) {
         let db = get_metadata();
         let sort = null;
         for (let metadata in db) {
@@ -1410,10 +1345,12 @@ let simsage = {
     api_version: 1,
     // the organisation's id to search, change "<organisation>" to...
     organisationId: "",
+    // is this our WordPress plugin
+    is_wordpress: false,
 
     // do we have an operator?
     operator_enabled: true,
-    category_size: 5,   // size of category lists
+    category_size: 5,       // size of category lists
     page_size: 5,           // number of pages per page in search
     page_size_custom: 10,   // number of pages per page in custom view
     currency_symbol: "$",
@@ -1449,7 +1386,8 @@ let simsage = {
     operator_count: 0,          // how many operators available
     chat_list: [],              // list of chat messages
 
-    is_custom_render: false,        // is this a custom render display?
+    has_categories: false,          // do we have categories to display?
+    is_custom_render: false,        // is this a db or rest source?
     filters_visible: false,         // are the filters visible
 
     semantic_search_results: [],    // semantic search results
@@ -1457,7 +1395,7 @@ let simsage = {
     semantic_search_result_map_id: {}, // urlId => semantic_search_result
 
     // single instance
-    instantiate() {
+    instantiate: function() {
         // add other modules
         jQuery.extend(this, common_functions);
         jQuery.extend(this, search_options_control);
@@ -1470,6 +1408,7 @@ let simsage = {
         jQuery.extend(this, chat_control);
         jQuery.extend(this, search_results_control);
         jQuery.extend(this, domain_control);
+        simsage = this;
         return this;
     },
 
@@ -1483,7 +1422,13 @@ let simsage = {
         } else {
             this.clear_search_results();
             this.reset_pagination("");
-            this.render_pagination();
+            this.close_no_search_results();
+            clear_controls();
+            if (this.has_categories) {
+                jQuery(".search-results").show();
+                this.render_pagination();
+                this.show_pagination();
+            }
         }
     },
 
@@ -1491,13 +1436,16 @@ let simsage = {
     do_search: function() {
         let self = this;
         let text = jQuery(".search-text").val();
-        if (this.kb && (this.is_custom_render || text.trim() !== '')) {
+        // only search if we have search-text or are a custom-render type
+        if (this.kb && (this.has_categories || text.trim() !== '')) {
             // do we need to reset the pagination?
-            this.reset_pagination(text);
+            if (this.reset_pagination(text)) {
+                this.close_bot();
+            }
             // create the query and clear the errors
             this.error('');
             text = cleanup_query_text(text);
-            let search_query_str = super_search_query_str(text, this.get_search_options_data(), this.is_custom_render);
+            let search_query_str = super_search_query_str(text, this.get_search_options_data(), this.has_categories);
             // console.log(search_query_str);
             if (search_query_str !== '()') {
                 simsage.search_query = text;
@@ -1529,10 +1477,15 @@ let simsage = {
                     self.receive_search_results(data);
                 });
 
-            } else if (!this.is_custom_render) {
+            } else if (!this.has_categories) {
                 this.error("Please enter a query to start searching.");
+
             } else {
-                console.debug('is_custom_render: empty query');
+                // no search, and no filters
+                if (this.has_categories) {
+                    // clear various screens
+                    this.clear_search_results();
+                }
             }
 
         } else if (!this.kb) {
@@ -1566,7 +1519,6 @@ let simsage = {
             // did we get semantic search results?
             if (data.resultList) {
                 this.shard_size_list = data.shardSizeList;
-                set_display_categories(data.semanticSet);
                 set_syn_sets(data.contextStack);
                 data.resultList.map(function (sr) {
                     if (!sr.botResult) {
@@ -1588,10 +1540,14 @@ let simsage = {
                 if (parseInt("" + divided) < divided) {
                     this.num_pages += 1;
                 }
+            } else {
+                // cleanup
+                this.num_results = 0;
+                this.num_pages = 0;
+                this.shard_size_list = [];
             }
 
             // did we get an bot reply?
-            let dt = this.unix_time_convert(new Date().getTime());
             if (data.hasResult && data.text && data.text.length > 0) {
                 // setup the bot
                 this.show_bot(data.text, data.urlList, data.imageList);
@@ -1600,6 +1556,14 @@ let simsage = {
             // copy the know email flag from our results
             if (!this.know_email && data.knowEmail) {
                 this.know_email = data.knowEmail;
+            }
+
+            // render whatever needs to be rendered, even if no results
+            this.render_search_results();
+            this.close_no_search_results();
+            // only hide pagination if normal search
+            if (!this.is_custom_render) {
+                this.hide_pagination();
             }
 
             // no results?
@@ -1625,8 +1589,7 @@ let simsage = {
                 }
 
             } else if (this.semantic_search_results && this.semantic_search_results.length > 0) {
-                // hide if no actual results
-                this.render_search_results();
+                // show results
                 this.show_search_results();
             }
         } // if message-type is right
@@ -1646,8 +1609,17 @@ let simsage = {
         if (kb_id === undefined) {
             kb_id = jQuery(".dd-knowledge-base").val();
         }
+        this.source = null;
+        this.is_custom_render = false;  // for db and rest sources only (that have special rendering needs)
+        this.has_categories = false;
+        simsage_sort_list = [];
+        simsage_control_list = [];
         this.source_list = [];
+        this.semantic_search_results = [];
+        this.num_pages = 0;
+        this.num_results = 0;
         this.is_custom_render = false;
+        this.has_categories = false;
         for (let i in this.kb_list) {
             if (this.kb_list.hasOwnProperty(i)) {
                 let kb = this.kb_list[i];
@@ -1656,7 +1628,8 @@ let simsage = {
                     for (let j in kb.sourceList) {
                         if (kb.sourceList.hasOwnProperty(j)) {
                             let source = kb.sourceList[j];
-                            this.source_list.push({"name": source.name, "id": source.sourceId, "category_list": source.categoryList});
+                            this.source_list.push({"name": source.name, "id": source.sourceId,
+                                "custom_render": source.customRender, "category_list": source.categoryList});
                         }
                     }
                     // select a default source if there is only one
@@ -1677,6 +1650,23 @@ let simsage = {
             jQuery(".knowledge-base-selector").show();
         else
             jQuery(".knowledge-base-selector").hide();
+        // show search screen if there are categories
+        if (this.has_categories)
+            jQuery(".search-results").show();
+        // clear categories?
+        if (this.source == null || !this.source.category_list || this.source.category_list.length === 0) {
+            setup_controls([]);
+        }
+        // setup the source/kb
+        this.clear_search();
+    },
+
+    // clear a source from the "Clear All" link button in the search-options dialog
+    clear_source: function() {
+        alert(this.kb.source_list.length);
+        if (this.kb && this.kb.source_list && this.kb.source_list.length > 1) {
+            this.on_change_source('');
+        }
     },
 
     // change source by id
@@ -1686,7 +1676,8 @@ let simsage = {
             source_id = jQuery(".dd-source").val();
         }
         this.source = null;
-        this.is_custom_render = false;
+        this.is_custom_render = false;  // for db and rest sources only (that have special rendering needs)
+        this.has_categories = false;
         simsage_sort_list = [];
         simsage_control_list = [];
         for (let i in this.source_list) {
@@ -1694,10 +1685,11 @@ let simsage = {
                 let source = this.source_list[i];
                 if (source.id == source_id) {
                     this.source = source;
+                    this.is_custom_render = source.custom_render;
                     // force display of filters if db system
                     if (source.category_list && source.category_list.length > 0) {
                         this.filters_visible = true;
-                        this.is_custom_render = true;
+                        this.has_categories = true;
                         this.page_size = this.page_size_custom;
                         setup_controls(source.category_list);  // our special controller
                         this.show_pagination(); // needed for sorting etc.
@@ -1712,12 +1704,8 @@ let simsage = {
         this.setup_office_365_user();
         // setup any potential domains
         this.change_domain(null);
-        if (!this.is_custom_render) {
-            this.hide_search_results(); // hide otherwise
-        } else {
-            this.do_search();
-        }
-        this.render_pagination();
+        // setup the source/kb
+        this.clear_search();
     },
 
 }
@@ -1731,7 +1719,7 @@ let search_options_control = {
     open: false,  // is the menu open or closed?
 
     // single instance, setup with a set of knowledge-bases
-    setup_search_options() {
+    setup_search_options: function() {
         if (!this.show_advanced_filter) {
             jQuery(".search-options-button").hide();
         } else {
@@ -1743,10 +1731,6 @@ let search_options_control = {
     // perform the initial startup setup
     init: function(control_id, settings) {
         let self = this;
-        if (!control_id) {
-            console.error("SimSage init() failed, 'control_id' not set")
-            return null;
-        }
         if (!settings || !settings.organisation_id || !settings.base_url) {
             console.error("SimSage init() failed, settings must be set with an 'organisation_id' and a 'base_url'")
             return null;
@@ -1754,8 +1738,6 @@ let search_options_control = {
         // get the settings we do have
         this.base_url = settings.base_url;
         this.organisationId = settings.organisation_id;
-        // load the render template
-        jQuery(control_id).load("template/simsage-search.html");
         // get possible setting overrides
         // do we have an operator?
         if (typeof settings.operator_enabled === "boolean") this.operator_enabled = settings.operator_enabled;
@@ -1778,9 +1760,19 @@ let search_options_control = {
         if (typeof settings.show_advanced_filter === "boolean") this.show_advanced_filter = settings.show_advanced_filter;
         // placeholder for search text-control
         if (typeof settings.search_placeholder === "string") this.search_placeholder = settings.search_placeholder;
+        // is this our word-press plugin?
+        if (typeof settings.is_wordpress === "boolean") this.is_wordpress = settings.is_wordpress;
+
+        // load the render template if not wordPress
+        if (!this.is_wordpress && !control_id) {
+            console.error("SimSage init() failed, 'control_id' not set")
+            return null;
+        }
+        jQuery(control_id).load("template/simsage-search.html");
 
         console.log("SimSage init, url:" + this.base_url + ", organisation-id:" + this.organisationId,
                     ", operator-enabled:" + this.operator_enabled);
+
         this.setup_search_options();
         this.setup_dropdowns();
         this.render_pagination();
@@ -1858,7 +1850,6 @@ let search_options_control = {
     // return the search metadata based on the selections
     get_search_options_data: function() {
         return {
-            "document_type": jQuery('label.document-type-sel select').val().split(','),
             "kb": jQuery('label.knowledge-base-sel select').val(),
             "title": [jQuery('.title-text').val()],
             "url": [jQuery('.url-text').val()],
@@ -1866,12 +1857,7 @@ let search_options_control = {
         };
     },
 
-    reset_document_type: function() {
-        jQuery('label.document-type-sel select').val("");
-    },
-
     clear_all: function() {
-        this.reset_document_type();
         jQuery(".title-text").val("");
         jQuery(".url-text").val("");
         jQuery(".author-text").val("");
@@ -1947,7 +1933,7 @@ let no_results = {
     know_email: false,
 
     // single instance
-    instantiate() {
+    instantiate: function() {
         jQuery.extend(this, common_functions);
         return this;
     },
@@ -1982,7 +1968,7 @@ let no_results = {
         this.close_bot();
         jQuery(".no-search-results").show();
         jQuery(".not-found-words").html(this.adjust_size(jQuery(".search-text").val(), 25));
-        jQuery(".search-results").hide();
+        this.clear_search_results();
         if (this.know_email) {
             jQuery(".ask-email-box").hide();
             jQuery(".ask-emailed-box").show();
@@ -2015,9 +2001,13 @@ let search_details = {
 
     // helper: render a single detail, but with a clickable url
     render_single_detail_url: function(label, url) {
-        let str = "<div class=\"row-height align-top\">\n" +
-            "<span class=\"label\" title=\"[label]\">[label]</span><span class=\"url\" onclick=\"window.open('[url]', '_blank')\" title=\"[text]\">[text]</span>\n" +
-            "</div>\n"
+        let str = "<div class=\"row-height align-top\">\n";
+        if (this.can_visit(url)) {
+            str += "<span class=\"label\" title=\"[label]\">[label]</span><span class=\"url\" onclick=\"window.open('[url]', '_blank')\" title=\"[text]\">[text]</span>\n";
+        } else {
+            str += "<span class=\"label\" title=\"[label]\">[label]</span><span class=\"text\" title=\"[text]\">[text]</span>\n";
+        }
+        str += "</div>\n"
         str = str
             .replace(/\[label]/g, this.esc_html(label))
             .replace(/\[text]/g, this.esc_html(url));
@@ -2195,7 +2185,7 @@ let spelling_control = {
 let search_bot = {
 
     // single instance
-    instantiate() {
+    instantiate: function() {
         jQuery.extend(this, common_functions);
         return this;
     },
@@ -2292,7 +2282,11 @@ let pagination_control = {
         jQuery(".pagination-box").show();
     },
 
-    // reset the variables used in determining pagination if the query has changed
+    hide_pagination: function() {
+        jQuery(".pagination-box").hide();
+    },
+
+    // reset the variables used in determining pagination if the query has changed, return true if reset
     reset_pagination: function(query_text) {
         if (this.last_query !== query_text) {
             this.last_query = query_text;
@@ -2303,7 +2297,9 @@ let pagination_control = {
             this.semantic_search_results = [];
             this.semantic_search_result_map = {};
             this.semantic_search_result_map_id = {};
+            return true;
         }
+        return false;
     },
 
     // render the pagination on-screen
@@ -2353,7 +2349,7 @@ let pagination_control = {
         str += "<span class=\"view-type-box\">\n";
 
         // sorting if this is a database
-        if (this.is_custom_render && simsage_sort_list.length > 0) {
+        if (this.has_categories && simsage_sort_list.length > 0) {
             str += "<span class=\"sort-text\" title=\"sort by\">\n" +
                 "<label>\n" +
                 "<select name=\"sort-by\" class=\"sort-select dd-sort\" tabindex=\"0\" onchange=\"simsage.do_change_sort()\" title=\"set the sort order of results\">\n";
@@ -2615,6 +2611,8 @@ let chat_control = {
             let ws_base = this.base_url + '/ws-api';
             let socket = new SockJS(ws_base);
             this.stompClient = Stomp.over(socket);
+            // overwrite stomp debug logging
+            this.stompClient.debug = function(msg) {};
             this.stompClient.connect({},
                 function () {
                     self.stompClient.subscribe('/chat/' + self.get_client_id(), function (answer) {
@@ -2632,7 +2630,6 @@ let chat_control = {
     // set the connection status of the chat system - and try and reconnect on fail
     set_ws_connected: function(is_ws_connected) {
         this.is_ws_connected = is_ws_connected;
-        let self = this;
         if (!is_ws_connected) {
             if (this.stompClient !== null) {
                 this.stompClient.disconnect();
@@ -2641,7 +2638,7 @@ let chat_control = {
             if (this.connection_retry_count > 1) {
                 this.error('not connected, trying to re-connect, please wait (try ' + this.connection_retry_count + ')');
             }
-            setTimeout(self.connect_ws, 5000); // try and re-connect as a one-off in 5 seconds
+            setTimeout(function() { this.connect_ws() }, 5000); // try and re-connect as a one-off in 5 seconds
             this.connection_retry_count += 1;
 
         } else {
@@ -2782,7 +2779,7 @@ let search_results_control = {
     },
 
     hide_search_results: function() {
-        if (!this.is_custom_render) {
+        if (!this.has_categories) {
             jQuery(".search-display").hide();
         } else {
             // just empty the search results if this is a db display
@@ -2810,12 +2807,29 @@ let search_results_control = {
         }
     },
 
+    open_url: function(url) {
+        if (url) {
+            window.open(url, '_blank');
+        }
+    },
+
+    // can the url be "visited / opened?"
+    can_visit: function(url) {
+        let url_lwr = url.toLowerCase().trim();
+        return (url_lwr.indexOf('http://') === 0 || url_lwr.indexOf('https://') === 0);
+    },
+
     render_single_text_search_result: function(id, url, title, fragment, fragment_index, num_fragments) {
         let str = "<div class=\"search-result\">\n" +
-            "<div title=\"visit [url]\" class=\"search-text-width\">\n" +
-            "<a href=\"[url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
-            "<div title=\"visit [url]\" onclick=\"visit_url('[url]');\" class=\"more-details\"><span class=\"title-text\">[title]</span></div>\n" +
-            "<div><span class=\"result-text\">[fragment]</span></div>\n" +
+            "<div class=\"search-text-width\">\n";
+        if (this.can_visit(url)) {
+            str += "<a href=\"[url]\" title=\"visit [url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
+            "<div title=\"visit [url]\" onclick=\"simsage.open_url('[url]')\" class=\"more-details\"><span class=\"title-text\">[title]</span></div>\n";
+        } else {
+            str += "<div title=\"[url]\"><span class=\"url-text\">[split-url]</span></div>\n" +
+                "<div title=\"[url]\" class=\"more-details\"><span class=\"title-text-no-click\">[title]</span></div>\n";
+        }
+        str += "<div><span class=\"result-text\">[fragment]</span></div>\n" +
             "<div class=\"navigate-td\">\n";
         if (fragment_index > 0) {
             str += "<span class=\"navigate-left\" tabindex=\"0\" title=\"view the previous relevant fragment in this document\" onkeyup=\"if (activation(event)) this.onclick()\" onclick=\"simsage.prev_fragment([id]);\"><span class=\"navigate-image\">&#x2039;</span></span>\n";
@@ -2916,7 +2930,7 @@ let search_results_control = {
                 val = val * 0.01;
             }
             // Replace the numerical value with stars
-            $(this).html(this.currency_symbol + val.toFixed(2));
+            $(this).html(simsage.currency_symbol + val.toFixed(2));
         });
         jQuery("div.db-image").each(function() {
             let val = jQuery(this).html().trim();
@@ -2935,7 +2949,9 @@ let search_results_control = {
     },
 
     clear_search_results: function() {
-        jQuery(".search-results").hide();
+        if (!this.has_categories) {
+            jQuery(".search-results").hide();
+        }
         jQuery(".search-results-td").html("");
     },
 

@@ -1,31 +1,43 @@
 
+button {
+    border: none;
+}
+
+.simsage-search {
+    font-family: 'Lucinda Grande', 'Lucinda Sans Unicode', Helvetica, Arial, Verdana, sans-serif;
+}
+
 /* disable chrome outlines */
-textarea:focus, input:focus, select:focus {
+.simsage-search textarea:focus, input:focus, select:focus {
     outline: none;
 }
 
-div:focus {
+.simsage-search div:focus {
     outline: none;
 }
 
-span:focus {
+.simsage-search button:focus {
+    outline: none;
+}
+
+.simsage-search span:focus {
     outline: none;
 }
 
 /* disable MS x in text-fields */
-input::-ms-clear {
+.simsage-search input::-ms-clear {
     display: none;
 }
 
-.search-bar {
+.simsage-search .search-bar {
 }
 
 /* enable down chevrons for selects */
-.select-wrapper {
+.simsage-search .select-wrapper {
     position: relative;
 }
 
-.select-wrapper:before {
+.simsage-search .select-wrapper:before {
     content: '\2304';
     color: black;
     display: inline-block;
@@ -36,7 +48,7 @@ input::-ms-clear {
 }
 
 /* no select class - no text selectable */
-.no-select {
+.simsage-search .no-select {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -44,7 +56,7 @@ input::-ms-clear {
 }
 
 /* parent of all pop-up dialogs, login, error */
-.dialog-parent {
+.simsage-search .dialog-parent {
     position: relative;
 }
 
@@ -185,19 +197,19 @@ input::-ms-clear {
     float: left;
     background-color: #454545;
     border-right: 2px solid #707070;
-    border-top: 2px solid #707070;
-    border-bottom: 2px solid #707070;
+    border-top: -2px solid #707070;
+    border-bottom: -2px solid #707070;
+    color: #ffffff;
     cursor: pointer;
+    text-align: center;
+    vertical-align: middle;
+    border-collapse: collapse;
     width: 110px !important;
-    height: 52px !important;
+    height: 56px !important;
 }
 
 .search-bar .search-button-box-text {
     font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
-    float: left;
-    color: #ffffff;
-    padding-left: 20px;
-    padding-top: 16px;
     font-size: 14px !important;
 }
 
@@ -432,6 +444,9 @@ input::-ms-clear {
     border-radius: 10px;
     background-color: #ffffff;
     float: left;
+    width: 100% !important;
+    min-width: 100% !important;
+    display: block;
 }
 
 .search-results .search-results-top-td {
@@ -443,6 +458,8 @@ input::-ms-clear {
 
 .search-results .search-results-two-columns {
     width: 100% !important;
+    min-width: 100% !important;
+    display: block;
 }
 
 /* two columns */
@@ -451,6 +468,7 @@ input::-ms-clear {
     float: left;
     vertical-align: top;
     width: 80%;
+    min-width: 80%;
 }
 
 .search-results .category-items-td {
@@ -460,6 +478,7 @@ input::-ms-clear {
     vertical-align: top;
     padding: 10px;
     width: 18%;
+    min-width: 18%;
 }
 
 @media only screen and (max-width: 1060px) {
@@ -507,6 +526,7 @@ input::-ms-clear {
     font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
     font-size: 14px;
     margin-bottom: 4px;
+    cursor: default;
 }
 
 .search-results a:link {
@@ -523,6 +543,14 @@ input::-ms-clear {
     font-size: 16px;
     margin-bottom: 4px;
     cursor: pointer;
+}
+
+.search-results .title-text-no-click {
+    color: #0062ff;
+    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+    font-size: 16px;
+    margin-bottom: 4px;
+    cursor: default;
 }
 
 .search-results .result-text {
@@ -1616,14 +1644,12 @@ input::-ms-clear {
     clear: both;
 }
 
-/**  chat with an operator **/
-
-.no-search-results .chat-to-operator {
-    margin-top: 40px;
-    margin-bottom: 5px;
-    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
-    font-size: 16px;
-    color: black;
+@media only screen and (max-width: 700px) {
+    .no-search-results {
+        left: 5px !important;
+        width: 95% !important;
+        padding: 5px !important;
+    }
 }
 
 /**********************************************************************/
@@ -1632,7 +1658,7 @@ input::-ms-clear {
 .error-dialog-box {
     position: absolute;
     z-index: 999;
-    left: 15vw;
+    left: 10vw;
 }
 
 .error-dialog {
@@ -1689,6 +1715,17 @@ input::-ms-clear {
 
 .error-dialog .error-spacer {
     clear: both;
+}
+
+@media only screen and (max-width: 700px) {
+    .error-dialog-box {
+        left: 5px;
+        width: 95% !important;
+    }
+    .error-dialog {
+        width: 100% !important;
+        padding: 5px !important;
+    }
 }
 
 /**************************************************************************/
@@ -2007,11 +2044,6 @@ input::-ms-clear {
     font-size: 12px;
     font-weight: 600;
 }
-
-
-
-
-
 
 
 /*******************************************/
@@ -2337,8 +2369,7 @@ input::-ms-clear {
 
 /** DB record rendering - suggested styles **/
 
-.db-record {
-    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+.simsage-search .db-record {
     float: left;
     width: 300px;
     height: 200px;
@@ -2397,7 +2428,7 @@ input::-ms-clear {
 
 /** toggle yes / no button style **/
 
-.toggle {
+.simsage-search .toggle {
     width: 24px;
     height: 21px;
     padding-top: -1px;
@@ -2410,14 +2441,14 @@ input::-ms-clear {
     transition: all 250ms ease;
 }
 
-.toggle-label {
+.simsage-search .toggle-label {
     margin-left: 10px;
     display: inline-block;
     width: 100px;
     font-size: 12px;
 }
 
-.toggle.off {
+.simsage-search .toggle.off {
     background: #e8e8e8;
     padding-left: 4px;
     width: 44px;

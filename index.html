@@ -27,7 +27,7 @@
 
 <script lang="js">
     // init SimSage - IE 11 compatible, do not change these variable names
-    simsage = simsage.instantiate();
+    simsage.instantiate();
     // init SimSage, after the document has loaded
     jQuery(document).ready(function () {
         simsage.init("#simsage-search-control", {
@@ -35,6 +35,15 @@
             base_url: 'http://localhost:8080',
             // your SimSage organisation id (a guid, eg. d276f883-e1c8-43ee-9129-df8c7df9c575)
             organisation_id: 'c276f883-e0c8-43ae-9119-df8b7df9c574'
+        });
+        // disable form submit on CR events
+        jQuery('.search-form').on('keydown keyup keypress', function(e) {
+            let keyCode = e.keyCode || e.which;
+            alert(keyCode);
+            if (keyCode === 13) {
+                e.preventDefault();
+                return false;
+            }
         });
     })
 </script>
