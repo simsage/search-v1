@@ -1,0 +1,49 @@
+/** dine-in specific css **/
+
+.dine-in-record {
+    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+    float: left;
+    width: 300px;
+    height: 300px;
+    border: none;
+    padding: 10px;
+    margin: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    cursor: default;
+    position: relative;
+}
+
+.dine-in-record-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.dine-in-cuisines {
+    margin-top: 10px;
+}
+
+.dine-in-image-box {
+    width: 90%;
+    min-height: 100px;
+    text-align: center;
+    padding: 10px;
+}
+
+.dine-in-record-text {
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.dine-in-address {
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.dine-in-phone {
+    position: absolute;
+    font-size: 12px;
+    bottom: 10px;
+    right: 20px;
+    vertical-align: bottom;
+}
+

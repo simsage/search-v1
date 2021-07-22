@@ -1,6 +1,12 @@
 
 # using SimSage search
 
+## uglify (minify) js
+
+installation: `npm install minify -g`
+
+usage: `minify js/simsage-search.js > js/simsage-search.min.js`
+
 ## include SimSage styles and javascript in your own html
 
 You can download all the files referenced below from this repository.
@@ -74,6 +80,8 @@ NB. you will need to copy all files in `js`, `css`, and `template` to your own s
 | fragment_count | the number of sub-semantic search results to display for each search result | 3 |
 | max_word_distance | If greater than zero, the maximum allowed distance of individual keywords in sentences for `hits` | 20 |
 | use_spelling_suggest | A boolean flag specifying use of the SimSage spelling correction system | false |
+| use_summarization | A boolean flag specifying use of the SimSage summarization API for single documents | false |
+| use_query_summarization | A boolean flag specifying use of the SimSage summarization API for queries and search-results | false |
 | context_label | Obsolete, a forced context label for this search control's initial context value | (empty string) |
 | context_match_boost | Obsolete, a score boost value to apply when context labels match on top of semantic-search scores | 0.02 |
 | bot_threshold | SimSage's Q&A sensitivity, a value between 0.0 and 1.0.  If you set this number too low, you'll get nonsense responses, if you set it too high, you'll only get exact results.  | 0.8125 |
@@ -83,5 +91,5 @@ NB. you will need to copy all files in `js`, `css`, and `template` to your own s
 ## test with a local http server (optional)
 ```
 npm install http-server -g
-http-server -p 4200 --cors --hot --host 0.0.0.0 --disableHostCheck true
+http-server -p 4201 --cors --hot --host 0.0.0.0 --disableHostCheck true
 ```

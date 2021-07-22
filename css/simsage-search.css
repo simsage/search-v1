@@ -48,7 +48,7 @@ button {
 }
 
 /* no select class - no text selectable */
-.simsage-search .no-select {
+.no-select {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -206,6 +206,22 @@ button {
     border-collapse: collapse;
     width: 110px !important;
     height: 56px !important;
+}
+
+.search-bar .summarization-button-box {
+    float: left;
+    display: none;
+    cursor: pointer;
+    text-align: center;
+    vertical-align: middle;
+    margin-top: 4px;
+    border-collapse: collapse;
+    width: 56px !important;
+    height: 56px !important;
+}
+
+.search-bar .summarization-button {
+    font-size: 24px !important;
 }
 
 .search-bar .search-button-box-text {
@@ -1382,14 +1398,33 @@ button {
     cursor: pointer;
 }
 
+
+/***********************************************************/
+/*  the sign-in icon  */
+
+.search-sign-in-icon .sign-in-image-box {
+    float: right;
+    margin-top: 10px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.search-sign-in-icon .sign-out-image-box {
+    float: right;
+    margin-top: 10px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
 /***********************************************************/
 /*  the sign-in dialog box  */
 
 
 .search-sign-in {
     position: absolute;
-    z-index: 999;
+    z-index: 998;
     left: 25vw;
+    margin-top: 10px;
     max-width: 1024px;
 }
 
@@ -1497,7 +1532,14 @@ button {
     color: #ffffff;
     margin-left: 26px;
     margin-top: 14px;
-    font-family: "Lucinda Grande", "Lucinda Sans Unicode", Helvetica, Arial, Verdana, sans-serif;
+    font-size: 16px;
+}
+
+.search-sign-in .sign-out-text {
+    float: left;
+    color: #ffffff;
+    margin-left: 18px;
+    margin-top: 14px;
     font-size: 16px;
 }
 
@@ -2453,3 +2495,63 @@ button {
     padding-left: 4px;
     width: 44px;
 }
+
+/*** summarization ***/
+
+.summary-dialog {
+    position: absolute;
+    cursor: default;
+    background: #ffffff;
+    z-index: 999;
+    margin-left: 10%;
+    border: 1px solid black;
+    padding: 10px;
+    width: 60%;
+}
+
+.summary-title-line {
+    margin-bottom: 40px;
+}
+
+.summary-title {
+    font-size: 22px;
+    margin-left: 20px;
+}
+
+.short-summary-title {
+    font-size: 22px;
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.summary-close-image {
+    float: right;
+    cursor: pointer;
+}
+
+.summary-text {
+    font-size: 16px;
+    margin-left: 10px;
+    line-height: 32px;
+}
+
+.summary-references {
+    margin-top: 20px;
+}
+
+.summary-reference {
+    font-size: 14px;
+    margin-left: 30px;
+    line-height: 20px;
+}
+
+.single-summarization-button-box {
+    cursor: pointer;
+    float: left;
+    margin-right: 12px;
+    margin-top: -2px;
+}
+
+.single-summarization-button {
+}
+

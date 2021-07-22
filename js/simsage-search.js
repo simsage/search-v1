@@ -20,6 +20,8 @@ let triangle_close = "&#x25BA;"
 
 // global list of all the control instances
 let simsage_control_list = [];
+// for clear and reset of controls
+let original_source_category_list = [];
 // for sorting
 let simsage_sort_list = [];
 // visibility of the controls (> Filters)
@@ -29,11 +31,18 @@ let default_category_size = 5;
 
 // execute "clear" on all the controls if they support it
 function clear_controls() {
+    clear_controls_no_search();
+    if (simsage && simsage.do_search) simsage.do_search();
+}
+
+// execute "clear" on all the controls if they support it
+function clear_controls_no_search() {
+    // reset any source categories
+    setup_controls(original_source_category_list);
     for (let i in simsage_control_list) {
         let c = simsage_control_list[i];
         if (c.clear) c.clear();
     }
-    if (simsage && simsage.do_search) simsage.do_search();
 }
 
 // is this a key CR or Space-bar event that should activate something?
@@ -122,6 +131,7 @@ function setup_controls(control_data_list) {
     // this is the super parent of each control 'category-items-td'
     $(".category-items-td").html(container_str);
     // add the semantic set control
+    simsage_control_list = [];
     simsage_control_list.push(syn_set_control.instantiate());
     // create the control data structures and instances that draw everything and keep state
     // these should all have unique metadata names
@@ -141,6 +151,7 @@ function setup_controls(control_data_list) {
         }
     }
     // normal search?
+    simsage_sort_list = [];
     if (simsage.has_categories && !simsage.is_custom_render) {
         simsage_sort_list.push({"name": "best search match", "metadata": "best-match", "sort": "desc", "selected": true});
     }
@@ -181,6 +192,48 @@ function setup_controls(control_data_list) {
         if (c.setup_control) c.setup_control();
     }
 }
+
+// update and re-render an existing control given the source's control
+function update_control(source_control) {
+    // find the control
+    for (let i in simsage_control_list) {
+        let c = simsage_control_list[i];
+        if (c && c.metadata && c.metadata === source_control.metadata) {
+            if (source_control.items) {
+                // get the selected items
+                let selected_map = {};
+                for (let j in c.items) {
+                    let item = c.items[j];
+                    if (item.selected && item.name) {
+                        selected_map[item.name] = true;
+                    }
+                }
+                c.items = JSON.parse(JSON.stringify(source_control.items));
+                // re-select items that were selected
+                for (let j in c.items) {
+                    let item = c.items[j];
+                    if (item.name && selected_map[item.name]) {
+                        item.selected = true;
+                    }
+                }
+            } else {
+                c.items = [];
+            }
+            c.render();
+            break;
+        }
+    }
+}
+
+
+// hide a control
+function hide_control(cat) {
+    if (cat && cat.metadata) {
+        jQuery(".c-" + cat.metadata).hide();
+    }
+}
+
+
 // set of support functions used by each control - and copied into each control by setup
 let common_functions = {
     // strings that are too big are clipped
@@ -397,7 +450,10 @@ function exec(fn, metadata, p1, p2) {
     for (let i in simsage_control_list) {
         let c = simsage_control_list[i];
         if (c && c.metadata === metadata) {
-            if (c && c[fn]) c[fn](p1, p2);
+            if (c && c[fn]) {
+                c[fn](p1, p2);
+                break;
+            }
         }
     }
 }
@@ -509,7 +565,7 @@ let one_level_control = {
             let item_counter = 0;
             let has_more = false;
             let filter_active = filter_text.length > 0;
-            // the non selected items, if there is still room
+            // draw selected items first - at the top
             for (let ci1 in this.items) {
                 if (this.items.hasOwnProperty(ci1)) {
                     let item1 = this.items[ci1];
@@ -522,15 +578,30 @@ let one_level_control = {
                                 "<span class=\"number-box\" title=\"" + this.esc_html(item1.count) + "\">" + this.esc_html(item1.count) + "</span>\n" +
                                 "</div>\n" +
                                 "</div>\n";
-                        } else {
+                            item_counter += 1;
+                        }
+                    }
+                    // enough items displayed
+                    if (!filter_active && category_size > 0 && item_counter >= category_size) {
+                        has_more = true;
+                        break;
+                    }
+                }
+            } // for each no-selected item
+            // the non selected items, if there is still room
+            for (let ci1 in this.items) {
+                if (this.items.hasOwnProperty(ci1)) {
+                    let item1 = this.items[ci1];
+                    if (!filter_active || item1.name.toLowerCase().indexOf(filter_lwr) >= 0) {
+                        if (!item1.selected) {
                             str += "<div class=\"item-box\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"exec('select_category','" + this.metadata + "', '" + this.esc_html(item1.name) + "')\">\n" +
                                 "<div><span class=\"single-level-box\" title=\"open category\"><input type=\"checkbox\" class=\"single-level-cb\" /></span>\n" +
                                 "<span class=\"category-head\" title=\"" + this.esc_html(item1.name) + "\">" + this.esc_html(item1.name) + "</span>\n" +
                                 "<span class=\"number-box\" title=\"" + this.esc_html(item1.count) + "\">" + this.esc_html(item1.count) + "</span>\n" +
                                 "</div>\n" +
                                 "</div>\n";
+                            item_counter += 1;
                         }
-                        item_counter += 1;
                     }
                     // enough items displayed
                     if (!filter_active && category_size > 0 && item_counter >= category_size) {
@@ -933,7 +1004,6 @@ let slider_control = {
     monetary: false,
 
     instantiate: function(cat) {
-        console.log(cat);
         let copy = jQuery.extend({}, slider_control);
         jQuery.extend(copy, common_functions); // add common utils for SimSage controls
         copy.displayName = cat.displayName;
@@ -1359,6 +1429,8 @@ let simsage = {
     fragment_count: 3,
     max_word_distance: 20,
     use_spelling_suggest: false,
+    use_summarization: false,           // summaries of individual documents
+    use_query_summarization: false,     // complex summaries using query and search-results
     context_label: '',
     context_match_boost: 0.02,
     // bot sensitivity - controls the A.I's replies - we suggest you don't change it!
@@ -1374,6 +1446,7 @@ let simsage = {
     kb: null,           // the selected knowledge-base
     source_list: [],    // list of sources
     source: null,       // the selected source
+    has_restricted_information: false,  // do any of the searches require a sign-in?
 
     is_busy: false,     // is the system busy?
 
@@ -1407,7 +1480,7 @@ let simsage = {
         jQuery.extend(this, pagination_control);
         jQuery.extend(this, chat_control);
         jQuery.extend(this, search_results_control);
-        jQuery.extend(this, domain_control);
+        jQuery.extend(this, summary_control);
         simsage = this;
         return this;
     },
@@ -1417,6 +1490,12 @@ let simsage = {
         jQuery(".search-text").val("");
         this.clear_all(); // clear filters
         this.close_bot();
+        this.num_results = 0;
+        // reset any source categories
+        if (this.source != null) {
+            this.source.category_list = JSON.parse(JSON.stringify(original_source_category_list));
+            setup_controls(this.source.category_list);
+        }
         if (this.is_custom_render) {
             this.do_search();
         } else {
@@ -1436,6 +1515,9 @@ let simsage = {
     do_search: function() {
         let self = this;
         let text = jQuery(".search-text").val();
+        jQuery(".summarization-button-box").hide();
+        this.num_results = 0;
+        this.setup_search_options(); // show or hide advanced search options
         // only search if we have search-text or are a custom-render type
         if (this.kb && (this.has_categories || text.trim() !== '')) {
             // do we need to reset the pagination?
@@ -1481,10 +1563,12 @@ let simsage = {
                 this.error("Please enter a query to start searching.");
 
             } else {
-                // no search, and no filters
+                // no search, and no filters, reset filters and clear search results
                 if (this.has_categories) {
                     // clear various screens
                     this.clear_search_results();
+                    clear_controls_no_search();
+                    this.render_pagination();
                 }
             }
 
@@ -1540,6 +1624,17 @@ let simsage = {
                 if (parseInt("" + divided) < divided) {
                     this.num_pages += 1;
                 }
+
+                // show the summarization button?
+                if (this.num_results > 1 && this.use_query_summarization) {
+                    jQuery(".summarization-button-box").show();
+                }
+
+                // reset the page to zero?
+                if (this.page > 0 && this.page >= this.num_pages) {
+                    this.page = 0;
+                    this.do_search();
+                }
             } else {
                 // cleanup
                 this.num_results = 0;
@@ -1592,6 +1687,44 @@ let simsage = {
                 // show results
                 this.show_search_results();
             }
+
+            // update source categories?
+            if (data.sourceCategories && data.sourceCategories.categoryList && data.sourceCategories.categoryList.length > 0) {
+                // first - hide the ones that aren't included at all
+                let existingMap = {};
+                let scl = data.sourceCategories.categoryList;
+                for (let i in scl) {
+                    existingMap[scl[i].metadata] = true;
+                }
+                if (this.source != null && this.source.category_list) {
+                    for (let i in this.source.category_list) {
+                        let cat = this.source.category_list[i];
+                        if (!existingMap[cat.metadata] && (cat.categoryType === cat_type_plain || cat.categoryType === cat_type_two_level)) {
+                            this.remove_source_category(this.source.category_list[i]);
+                        }
+                    }
+                }
+                // and modify the ones that do exist
+                for (let i in scl) {
+                    if (scl.hasOwnProperty(i)) {
+                        let cat = scl[i];
+                        if (cat.categoryType === cat_type_plain || cat.categoryType === cat_type_two_level) {
+                            this.update_source_category(cat);
+                        }
+                    }
+                }
+            } else if (data.sourceCategories) {
+                // hide all categories - none matched
+                if (this.source != null && this.source.category_list) {
+                    for (let i in this.source.category_list) {
+                        let cat = this.source.category_list[i];
+                        if (cat.categoryType === cat_type_plain || cat.categoryType === cat_type_two_level) {
+                            this.remove_source_category(this.source.category_list[i]);
+                        }
+                    }
+                }
+            }
+
         } // if message-type is right
     },
 
@@ -1641,11 +1774,6 @@ let simsage = {
         }
         // setup the drop down boxes in the UI
         this.setup_dropdowns();
-        // deal with domains
-        this.setup_domains();
-        this.setup_office_365_user();
-        // setup any potential domains
-        this.change_domain(null);
         if (this.kb_list.length > 1)
             jQuery(".knowledge-base-selector").show();
         else
@@ -1655,6 +1783,7 @@ let simsage = {
             jQuery(".search-results").show();
         // clear categories?
         if (this.source == null || !this.source.category_list || this.source.category_list.length === 0) {
+            original_source_category_list = [];
             setup_controls([]);
         }
         // setup the source/kb
@@ -1663,10 +1792,28 @@ let simsage = {
 
     // clear a source from the "Clear All" link button in the search-options dialog
     clear_source: function() {
-        alert(this.kb.source_list.length);
         if (this.kb && this.kb.source_list && this.kb.source_list.length > 1) {
             this.on_change_source('');
         }
+    },
+
+    // go through the current source's categories and find the category - and update it as well as its display
+    update_source_category: function(category) {
+        if (this.source != null && this.source.category_list) {
+            for (let i in this.source.category_list) {
+                let sc = this.source.category_list[i];
+                if (sc.metadata === category.metadata) {
+                    sc.items = category.items; // update the list of items to display with their counts
+                    update_control(sc);
+                    break;
+                }
+            }
+        }
+    },
+
+    // hide a category that no-longer exists / is used
+    remove_source_category: function(cat) {
+        hide_control(cat);
     },
 
     // change source by id
@@ -1691,6 +1838,7 @@ let simsage = {
                         this.filters_visible = true;
                         this.has_categories = true;
                         this.page_size = this.page_size_custom;
+                        original_source_category_list = JSON.parse(JSON.stringify(source.category_list));
                         setup_controls(source.category_list);  // our special controller
                         this.show_pagination(); // needed for sorting etc.
                     }
@@ -1699,11 +1847,6 @@ let simsage = {
         }
         // setup the drop down boxes in the UI
         this.setup_dropdowns();
-        // deal with domains
-        this.setup_domains();
-        this.setup_office_365_user();
-        // setup any potential domains
-        this.change_domain(null);
         // setup the source/kb
         this.clear_search();
     },
@@ -1725,7 +1868,9 @@ let search_options_control = {
         } else {
             jQuery(".search-options-button").show();
         }
+        // always hide the menu underneath it
         jQuery(".filter-box-view").hide();
+        this.menu_visible = false;
     },
 
     // perform the initial startup setup
@@ -1752,6 +1897,8 @@ let search_options_control = {
         if (typeof settings.fragment_count === "number") this.fragment_count = settings.fragment_count;
         if (typeof settings.max_word_distance === "number") this.max_word_distance = settings.max_word_distance;
         if (typeof settings.use_spelling_suggest === "boolean") this.use_spelling_suggest = settings.use_spelling_suggest;
+        if (typeof settings.use_summarization === "boolean") this.use_summarization = settings.use_summarization;
+        if (typeof settings.use_query_summarization === "boolean") this.use_query_summarization = settings.use_query_summarization;
         if (typeof settings.context_label === "string") this.context_label = settings.context_label;
         if (typeof settings.context_match_boost === "number") this.context_match_boost = settings.context_match_boost;
         // bot sensitivity - controls the A.I's replies - we suggest you don't change it!
@@ -1804,6 +1951,12 @@ let search_options_control = {
         this.get_message(url, function(data) {
             self.kb_list = data.kbList;
             self.operator_count = data.operatorCount;
+            self.has_restricted_information = data.hasRestrictedInformation;
+            if (self.has_restricted_information) {
+                jQuery(".search-sign-in-icon").show();
+            } else {
+                jQuery(".search-sign-in-icon").hide();
+            }
             // get any previously assigned operator on refresh
             self.assigned_operator_id = '';
             if (data.assignedOperatorId) {
@@ -2000,17 +2153,18 @@ let search_details = {
     },
 
     // helper: render a single detail, but with a clickable url
-    render_single_detail_url: function(label, url) {
+    render_single_detail_url: function(label, url, url_id) {
         let str = "<div class=\"row-height align-top\">\n";
         if (this.can_visit(url)) {
             str += "<span class=\"label\" title=\"[label]\">[label]</span><span class=\"url\" onclick=\"window.open('[url]', '_blank')\" title=\"[text]\">[text]</span>\n";
         } else {
-            str += "<span class=\"label\" title=\"[label]\">[label]</span><span class=\"text\" title=\"[text]\">[text]</span>\n";
+            str += "<span class=\"label\" title=\"[label]\">[label]</span><span class=\"url\" onclick=\"window.open('[binary]', '_blank')\" title=\"[text]\">[text]</span>\n";
         }
         str += "</div>\n"
         str = str
             .replace(/\[label]/g, this.esc_html(label))
-            .replace(/\[text]/g, this.esc_html(url));
+            .replace(/\[text]/g, this.esc_html(url))
+            .replace(/\[binary]/g, this.get_binary_url(url_id));
         return str;
     },
 
@@ -2019,13 +2173,18 @@ let search_details = {
             this.get_client_id();
     },
 
+    get_binary_url: function(url_id) {
+        return this.base_url + '/api/document/binary/' + this.organisationId + '/' + this.kb.id + '/' +
+               this.get_client_id() + '/' + url_id;
+    },
+
     // render the details of a single result
     render_details_view: function(result) {
         if (result) {
             let str = "<table class=\"details-table\">\n" +
                 "<tbody><tr class=\"align-top whole-row\">\n" +
                 "<td class=\"align-top row-1\">\n";
-            str += this.render_single_detail_url("url", result.url);
+            str += this.render_single_detail_url("url", result.url, result.urlId);
             if (result.title) {
                 str += this.render_single_detail("title", result.title);
             }
@@ -2127,25 +2286,77 @@ let sign_in_control = {
 
     show_sign_in: function() {
         jQuery(".search-sign-in").show();
-    },
-
-    setup_domains: function() {
-    },
-
-    setup_office_365_user: function() {
-    },
-
-    // setup any potential domains
-    change_domain: function(domain) {
-    },
-
-    do_sign_in: function() {
-        alert("todo: do_sign_in");
+        jQuery(".sign-in-user-name").focus();
     },
 
     close_sign_in: function() {
-        jQuery(".password").val("");
+        jQuery(".sign-in-password").val(''); // wipe the password
         jQuery(".search-sign-in").hide();
+    },
+
+    sign_in_typing: function(event) {
+        if (event.keyCode === 13) {
+            this.do_sign_in();
+        }
+    },
+
+    sign_in_status: function(signed_in) {
+        if (signed_in) {
+            jQuery(".sign-in-image-box").hide();
+            jQuery(".sign-out-image-box").show();
+            jQuery(".sign-in-part").hide();
+            jQuery(".sign-out-part").show();
+            jQuery(".sign-in-user-name").prop('disabled', true);
+            jQuery(".sign-in-password").prop('disabled', true);
+            this.close_sign_in();
+        } else {
+            jQuery(".sign-in-image-box").show();
+            jQuery(".sign-out-image-box").hide();
+            jQuery(".sign-in-part").show();
+            jQuery(".sign-out-part").hide();
+            jQuery(".sign-in-user-name").prop('disabled', false);
+            jQuery(".sign-in-password").prop('disabled', false);
+        }
+    },
+
+    // do the actual sign-in
+    do_sign_in: function() {
+        let self = this;
+        if (this.source) {
+            let user_name = jQuery(".sign-in-user-name").val();
+            let password = jQuery(".sign-in-password").val();
+            if (user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
+                this.busy(true);
+                this.error('');
+                let signInData = {
+                    'organisationId': this.organisationId,
+                    'kbList': [this.kb.id],
+                    'clientId': this.get_client_id(),
+                    'userName': user_name,
+                    'password': password,
+                };
+                simsage.post_message('/api/ops/ad/sign-in', signInData, function (data) {
+                    self.receive_ws_data(data, false);
+                });
+            }
+        }
+    },
+
+    do_sign_out: function() {
+        let self = this;
+        this.error('');
+        if (this.kb && this.source) {
+            this.busy(true);
+            let signOutData = {
+                'organisationId': this.organisationId,
+                'kbList': [this.kb.id],
+                'clientId': this.get_client_id(),
+            };
+            this.post_message('/api/ops/ad/sign-out', signOutData, function (data) {
+                self.receive_ws_data(data);
+                self.close_sign_in();
+            });
+        }
     },
 
 }
@@ -2243,6 +2454,7 @@ let pagination_control = {
 
     do_change_page_size: function() {
         this.page_size = parseInt(jQuery(".dd-page-size").val());
+        this.page = 0; // reset page to page 0
         this.do_search();
     },
 
@@ -2257,11 +2469,13 @@ let pagination_control = {
     select_text_view: function() {
         this.selected_view = "text";
         this.do_search();
+        this.render_pagination();
     },
 
     select_image_view: function() {
         this.selected_view = "image";
         this.do_search();
+        this.render_pagination();
     },
 
     prev_page: function() {
@@ -2410,14 +2624,18 @@ let chat_control = {
     stompClient: null,                          // the connection
 
     close_chat: function() {
+        jQuery(".slider-body").show(); // sliders go over top of chat - show them again
         jQuery(".operator-chat-box-view").hide();
     },
 
     show_chat: function() {
+        let sliders = jQuery(".slider-body");
         let ctrl = jQuery(".operator-chat-box-view");
         if (ctrl.is(":visible")) {
+            sliders.show(); // sliders go over top of chat - show them again
             ctrl.hide();
         } else {
+            sliders.hide(); // sliders go over top of chat - hide them
             ctrl.show();
         }
     },
@@ -2674,8 +2892,9 @@ let chat_control = {
 
             } else if (data.messageType === this.mt_SignIn) {
                 if (data.errorMessage && data.errorMessage.length > 0) {
-                    error(data.errorMessage);  // set an error
+                    this.error(data.errorMessage);  // set an error
                     this.signed_in = false;
+                    this.sign_in_status(false);
                 } else {
                     // sign-in successful
                     this.signed_in = true;
@@ -2822,13 +3041,23 @@ let search_results_control = {
     render_single_text_search_result: function(id, url, title, fragment, fragment_index, num_fragments) {
         let str = "<div class=\"search-result\">\n" +
             "<div class=\"search-text-width\">\n";
-        if (this.can_visit(url)) {
-            str += "<a href=\"[url]\" title=\"visit [url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
-            "<div title=\"visit [url]\" onclick=\"simsage.open_url('[url]')\" class=\"more-details\"><span class=\"title-text\">[title]</span></div>\n";
-        } else {
-            str += "<div title=\"[url]\"><span class=\"url-text\">[split-url]</span></div>\n" +
-                "<div title=\"[url]\" class=\"more-details\"><span class=\"title-text-no-click\">[title]</span></div>\n";
+
+        let summ_str = "";
+        if (this.use_summarization) {
+            summ_str += "<span class='single-summarization-button-box' title='read a summary of this document' ";
+            summ_str += "onClick='event.preventDefault(); simsage.do_summarize_single(\"[url]\"); return false;'>";
+            summ_str += "<span class='single-summarization-button'>&#x1F5CE;</span>";
+            summ_str += "</span>";
         }
+
+        if (this.can_visit(url)) {
+            str += summ_str + "<a href=\"[url]\" title=\"visit [url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
+                "<div title=\"visit [url]\"><span class=\"title-text\">[title]</span></div>\n";
+        } else {
+            str += summ_str + "<a href=\"[binary]\" title=\"view [url]\" target=\"_blank\"><span class=\"url-text\">[split-url]</span></a>\n" +
+                "<div title=\"view [url]\" onclick=\"simsage.open_url('[binary]')\" class=\"more-details\"><span class=\"title-text\">[title]</span></div>\n";
+        }
+
         str += "<div><span class=\"result-text\">[fragment]</span></div>\n" +
             "<div class=\"navigate-td\">\n";
         if (fragment_index > 0) {
@@ -2848,6 +3077,7 @@ let search_results_control = {
             "<img src=\"[thumbnail_src]\" alt=\"[title]\" class=\"result-image\"/>\n" +
             "</div>\n" +
             "</div>\n";
+        let title_short = simsage.adjust_size(title, 40);
         let fragment_str = this.esc_html(fragment)
             .replace(/{hl1:}/g, "<span class='hl1'>")
             .replace(/{:hl1}/g, "</span>")
@@ -2855,10 +3085,11 @@ let search_results_control = {
             .replace(/{:hl2}/g, "</span>");
         str = str
             .replace(/\[url]/g, this.esc_html(url))
+            .replace(/\[binary]/g, this.get_binary_url(id))
             .replace(/\[split-url]/g, this.esc_html(url))
             .replace(/\[id]/g, this.esc_html(id))
             .replace(/\[thumbnail_src]/g, this.get_preview_url() + '/' + this.esc_html(id) + '/-1')
-            .replace(/\[title]/g, title && title.length > 0 ? this.esc_html(title) : "(no title)")
+            .replace(/\[title]/g, title_short && title_short.length > 0 ? this.esc_html(title_short) : "(no title)")
             .replace(/\[fragment]/g, fragment_str);
         return str;
     },
@@ -2875,13 +3106,14 @@ let search_results_control = {
             "<img src=\"[thumbnail_src]\" alt=\"image\" class=\"result-image-image\"/>\n" +
             "</div>\n" +
             "<div class=\"image-text\" title=\"[title]\" onclick=\"simsage.show_search_details_by_id([id]);\">\n" +
-            "[title-short]\n" +
+            "<a href=\"[binary]\" target=\"_blank\">[title-short]</a>\n" +
             "</div>\n" +
             "</div>\n";
         let title_short = simsage.adjust_size(title, 40);
         str = str
             .replace(/\[url]/g, url)
             .replace(/\[id]/g, id)
+            .replace(/\[binary]/g, this.get_binary_url(id))
             .replace(/\[thumbnail_src]/g, this.get_preview_url() + '/' + id + '/0')
             .replace(/\[title-short]/g, title_short && title_short.length > 0 ? title_short : "(no title)")
             .replace(/\[title]/g, title && title.length > 0 ? title : "(no title)");
@@ -3004,135 +3236,120 @@ let search_results_control = {
 
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// the no-results handling
+// summarization handling
 //
 
-let domain_control = {
+let summary_control = {
 
-    signed_in: false, // are we signed into a domain or something?
-
-    do_change_domain: function() {
-        // // what type of domain is this?
-        // let domainType = "";
-        // let domain_list = simsage.getDomainListForCurrentKB();
-        // for (let domain of domain_list) {
-        //     if (domain.sourceId == simsage.sourceId) {
-        //         domainType = domain.domainType;
-        //         break;
-        //     }
-        // }
-        // let div_email = document.getElementById("divEmail");
-        // let div_password = document.getElementById("divPassword");
-        // let txt_email = document.getElementById("txtEmail");
-        //
-        // if (domainType === "aad") { // office365
-        //     div_email.style.display = "none";
-        //     div_password.style.display = "none";
-        // } else {
-        //     div_email.style.display = "";
-        //     div_password.style.display = "";
-        //     if (domainType === "simsage") {
-        //         txt_email.placeholder = 'SimSage username';
-        //     } else {
-        //         txt_email.placeholder = 'Active-Directory username';
-        //     }
-        //     txt_email.focus();
-        // }
+    close_summarize: function() {
+        jQuery(".summary-display").html("");
     },
 
-    show_sign_in: function() {
-        if (this.source) {
-            jQuery(".sign-in-title").html("sign-in to \"" +
-                this.esc_html(this.source.name) + ", " +
-                this.esc_html(this.source.domainType) + "\"");
-            jQuery(".search-sign-in").show();
-        }
-    },
-
-    // get or create a session based client id for SimSage usage
-    set_office365_user: function(data) {
-        let key = 'simsearch_office_365_user';
-        let hasLs = simsage.has_local_storage();
-        if (hasLs) {
-            let to = simsage.session_timeout_in_mins * 60000;
-            data.expiry = new Date().getTime() + to; // 1 hour timeout
-            localStorage.setItem(key, JSON.stringify(data));
-        }
-    },
-
-    // get or create a session based client id for SimSage usage
-    remove_office365_user: function() {
-        let key = 'simsearch_office_365_user';
-        let hasLs = simsage.has_local_storage();
-        if (hasLs) {
-            localStorage.removeItem(key);
-        }
-    },
-
-    // do the actual sign-in
-    do_sign_in: function() {
-        let self = this;
-        if (this.source) {
-            let user_name = jQuery(".sign-in-user-name").val();
-            let password = jQuery(".sign-in-password").val();
-            let domain = { sourceId: this.source.id, domain: this.source.name, domain_type: this.source.domainType };
-            if (domain.domainType === 'aad') { // azure ad
-                let user = this.get_office365_user();
-                if (!user) {
-                    // do we already have the code to sign-in?
-                    let urlParams = new URLSearchParams(window.location.search);
-                    let code = urlParams.get('code');
-                    if (!code) {
-                        window.location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=' +
-                            domain.clientId + '&response_type=code&redirect_uri=' +
-                            encodeURIComponent(domain.redirectUrl) + '&scope=User.ReadBasic.All+offline_access+openid+profile' +
-                            '&state=' + this.get_client_id();
-                    } else {
-                        // login this user, using the code
-                        this.setup_office_365_user();
-                    }
-                } else {
-                    // we have a user - assume the client wants to sign-out
-                    this.remove_office365_user();
-                    this.signed_in = false;
-                    this.error('');
+    show_summary: function(title, data) {
+        let str = "<div class='summary-dialog'>";
+        str += "<div class='summary-title-line'><span class='summary-title'>&#x201C;" + title + "&#x201D;</span>";
+        str += "<span class='summary-close-image' title='close' onkeyup='if (activation(event)) this.onclick(null)'";
+        str += " onclick='event.preventDefault(); simsage.close_summarize(); return false;'>&times;</span></div>";
+        let map = {};
+        if (data && data.summary) {
+            let url_count = 0;
+            let url_list = [];
+            for (let i = 0; i < data.summary.length; i++) {
+                let s = data.summary[i].text;
+                let u = data.summary[i].url;
+                let ref_str = "";
+                if (!map[u]) {
+                    map[u] = true;
+                    url_count += 1;
+                    ref_str = "<sup>[" + url_count + "]</sup>";
+                    url_list.push(u);
                 }
-            } else if (user_name && user_name.length > 0 && password && password.length > 0 && this.kb) {
-                this.busy(true);
-                this.error('');
-                let adSignInData = {
-                    'organisationId': this.organisationId,
-                    'kbList': [this.kb.id],
-                    'clientId': this.get_client_id(),
-                    'sourceId': this.source.id,
-                    'userName': user_name,
-                    'password': password,
-                };
-                simsage.post_message('/api/ops/ad/sign-in', adSignInData, function (data) {
-                    self.receive_ws_data(data, false);
-                });
+                str += "<div class='summary-text'>" + s + ref_str + "</div>";
+            }
+            str += "<div class='summary-references'>"
+            for (let i = 0; i < url_list.length; i++) {
+                let id = i + 1;
+                str += "<div class='summary-reference'><sup>[" + id + "]</sup>&nbsp;" + url_list[i] + "</div>"
+            }
+            str += "</div>";
+        }
+        str += "</div>";
+        jQuery(".summary-display").html(str);
+    },
+
+    show_single_summary: function(data) {
+        let str = "<div class='summary-dialog'>";
+        str += "<div class='short-summary-title'><span>a short summary of &#x201C;" + data.url + "&#x201D;</span>";
+        str += "<span class='summary-close-image' title='close' onkeyup='if (activation(event)) this.onclick(null)'";
+        str += " onclick='event.preventDefault(); simsage.close_summarize(); return false;'>&times;</span></div>";
+        let map = {};
+        if (data && data.summary) {
+            for (let i = 0; i < data.summary.length; i++) {
+                let s = data.summary[i];
+                str += "<div class='summary-text'>" + s + "</div>";
+            }
+            str += "<div class='summary-references'>"
+            str += "<div class='summary-reference'><sup>[1]</sup>&nbsp;" + data.url + "</div>"
+            str += "</div>";
+        }
+        str += "</div>";
+        jQuery(".summary-display").html(str);
+    },
+
+    // perform a document summarization
+    do_summarize: function() {
+        let self = this;
+        let text = jQuery(".search-text").val();
+        let url_list = [];
+        if (this.semantic_search_results) {
+            for (let i = 0; i < this.semantic_search_results.length; i++) {
+                if (this.semantic_search_results.hasOwnProperty(i)) {
+                    if (this.semantic_search_results[i].url) {
+                        url_list.push(this.semantic_search_results[i].url);
+                    }
+                }
             }
         }
+        if (this.kb && text.trim() !== '' && url_list.length > 0) {
+            // create the query and clear the errors
+            this.error('');
+            this.busy(true);
+            let summarization = {
+                'organisationId': this.organisationId,
+                'kbId': this.kb.id,
+                'query': text,
+                'urlList': url_list,
+                'threshold': 0.1,
+                'top': 10
+            };
+            this.post_message('/api/document/summarize/query', summarization, function(data) {
+                self.show_summary(text, data);
+            });
+        }
     },
 
-    do_sign_out: function() {
+    // perform a document summarization
+    do_summarize_single: function(url) {
         let self = this;
-        this.error('');
-        if (this.kb && this.source) {
+        if (this.kb && url && url.length > 0) {
+            // create the query and clear the errors
+            this.error('');
             this.busy(true);
-            this.remove_office365_user();
-            let signOutData = {
+            let summarization = {
                 'organisationId': this.organisationId,
-                'kbList': [this.kb.id],
-                'clientId': this.get_client_id(),
-                'sourceId': this.source.id,
+                'kbId': this.kb.id,
+                'url': url,
+                'top': 10
             };
-            this.post_message('/api/ops/ad/sign-out', signOutData, function (data) {
-                self.receive_ws_data(data);
+            this.post_message('/api/document/summarize/document', summarization, function(data) {
+                self.show_single_summary(data);
             });
         }
     },
 
 }
+
+

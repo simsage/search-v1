@@ -12,12 +12,14 @@
 
     <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css" />
 
+    <link rel="stylesheet" type="text/css" href="css/dine-in.css" />
+
     <!-- load SimSage style sheet -->
     <link rel="stylesheet" type="text/css" href="css/simsage-search.css" />
     <!-- load SimSage javascript code -->
     <script src="js/simsage-search.js"></script>
 
-    <link rel="icon" type="image/png" href="favicon.png?v=1.0" />
+    <link rel="icon" type="image/png" href="favicon.png?v=2.3" />
 
 </head>
 <body>
@@ -33,13 +35,12 @@
         simsage.init("#simsage-search-control", {
             // the SimSage api server
             base_url: 'http://localhost:8080',
-            // your SimSage organisation id (a guid, eg. d276f883-e1c8-43ee-9129-df8c7df9c575)
-            organisation_id: 'c276f883-e0c8-43ae-9119-df8b7df9c574'
+            // your SimSage organisation id (a guid, eg. c276f883-e0c8-43ae-9119-df8b7df9c574)
+            organisation_id: 'c276f883-e0c8-43ae-9119-df8b7df9c574',
         });
         // disable form submit on CR events
         jQuery('.search-form').on('keydown keyup keypress', function(e) {
             let keyCode = e.keyCode || e.which;
-            alert(keyCode);
             if (keyCode === 13) {
                 e.preventDefault();
                 return false;

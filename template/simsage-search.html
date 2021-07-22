@@ -24,24 +24,6 @@
                         </div>
                         <table class="filter-table">
                             <tr class="tr-1">
-                                <td class="col-1 sign-in-box" style="display: none;">
-                                    <span class="category-text">Sign-in</span>
-                                    <div class="category-item">
-                                        <label class="sign-in-sel select-wrapper">
-                                            <select name="sign-in" class="category-select dd-sign-in" tabindex="0"
-                                                    onchange="simsage.do_change_domain()">
-                                            </select>
-                                        </label>
-                                    </div>
-                                </td>
-                                <td class="col-2 sign-in-text" style="display: none;">
-                                        <span class="clear-text" title="sign-in" tabindex="0"
-                                              onkeyup="if (activation(event)) this.onclick(null)" onclick="simsage.show_sign_in()">sign-in</span>
-                                </td>
-                                <td class="col-2 sign-out-text" style="display: none;">
-                                    <span class="clear-text" title="sign-out" tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" onclick="simsage.do_sign_out()">sign-out</span>
-                                </td>
-
                                 <td class="col-1 knowledge-base-selector" style="display: none;">
                                     <span class="category-text">Knowledge Base</span>
                                     <div class="category-item">
@@ -126,8 +108,26 @@
 
                 <!-- search button -->
                 <button class="search-button-box" title="query SimSage, start finding" onclick="event.preventDefault(); simsage.do_search(); return false;">SEARCH</button>
+
+                <!-- summarization button -->
+                <div class="summarization-button-box" title="create a summary for the given search-results" onclick="event.preventDefault(); simsage.do_summarize(); return false;">
+                    <div class="summarization-button">&#x1F5CE;</div>
+                </div>
+
             </form>
         </div>
+
+        <!-- ***************** -->
+        <!-- Sign-in icon -->
+        <div class="search-sign-in-icon no-select" style="display: none;">
+            <div class="sign-in-image-box" title="sign in" onclick="simsage.show_sign_in()">
+                <img src="images/not-signed-in.svg" alt="sign in" />
+            </div>
+            <div class="sign-out-image-box" title="sign out" style="display: none;" onclick="simsage.show_sign_in()">
+                <img src="images/signed-in.svg" alt="sign in" />
+            </div>
+        </div>
+
     </div>
 
     <!-- remove float left -->
@@ -155,6 +155,13 @@
             </div>
         </div>
     </div>
+
+    <!-- ************************************ -->
+    <!-- summary dialog -->
+
+    <div class="summary-display" onclick="simsage.nop()">
+    </div>
+
 
     <div class="dialog-parent">
 
@@ -194,6 +201,7 @@
         </div>
 
 
+
         <!-- ***************** -->
         <!-- Sign-in dialog box -->
         <div class="search-sign-in" style="display: none;">
@@ -208,13 +216,13 @@
                 <span class="category-text">username</span>
                 <div class="category-item">
                     <label>
-                        <input type="text" maxlength="100" placeholder="your username" class="category-input sign-in-user-name" title="your username">
+                        <input type="text" maxlength="100" placeholder="your username" class="category-input sign-in-user-name" title="your username" onkeyup="simsage.sign_in_typing(event)">
                     </label>
                 </div>
                 <span class="category-text">password</span>
                 <div class="category-item">
                     <label>
-                        <input type="password" maxlength="80" placeholder="your password" class="category-input sign-in-password" title="your password">
+                        <input type="password" maxlength="80" placeholder="your password" class="category-input sign-in-password" title="your password" onkeyup="simsage.sign_in_typing(event)">
                     </label>
                 </div>
                 <div class="spacer"></div>
@@ -222,9 +230,15 @@
             <div class="bar-bottom">
             <span class="clear-text-box">
             </span>
-                <span tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" class="sign-in-button" title="sign-in" onclick="simsage.do_sign_in()">
+
+            <span tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" class="sign-in-button no-select sign-in-part" title="sign-in" onclick="simsage.do_sign_in()">
                 <span class="sign-in-text">sign-in</span>
             </span>
+
+            <span tabindex="0" onkeyup="if (activation(event)) this.onclick(null)" class="sign-in-button no-select sign-out-part" title="sign-in" style="display: none;" onclick="simsage.do_sign_out()">
+                <span class="sign-out-text">sign-out</span>
+            </span>
+
             </div>
         </div>
 
