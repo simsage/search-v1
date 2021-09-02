@@ -21,7 +21,7 @@ let triangle_close = "&#x25BA;"
 // global list of all the control instances
 let simsage_control_list = [];
 // for clear and reset of controls
-let original_source_category_list = [];
+let original_category_list = [];
 // for sorting
 let simsage_sort_list = [];
 // visibility of the controls (> Filters)
@@ -38,7 +38,7 @@ function clear_controls() {
 // execute "clear" on all the controls if they support it
 function clear_controls_no_search() {
     // reset any source categories
-    setup_controls(original_source_category_list);
+    setup_controls(original_category_list);
     for (let i in simsage_control_list) {
         let c = simsage_control_list[i];
         if (c.clear) c.clear();
@@ -1445,6 +1445,7 @@ let simsage = {
     kb_list: [],        // list of knowledge-bases
     kb: null,           // the selected knowledge-base
     source_list: [],    // list of sources
+    category_list: [],  // global categories for this knowledge-base
     source: null,       // the selected source
     has_restricted_information: false,  // do any of the searches require a sign-in?
 
@@ -1491,10 +1492,9 @@ let simsage = {
         this.clear_all(); // clear filters
         this.close_bot();
         this.num_results = 0;
-        // reset any source categories
-        if (this.source != null) {
-            this.source.category_list = JSON.parse(JSON.stringify(original_source_category_list));
-            setup_controls(this.source.category_list);
+        // reset categories
+        if (this.original_category_list != null) {
+            setup_controls(this.original_category_list);
         }
         if (this.is_custom_render) {
             this.do_search();
@@ -1555,7 +1555,7 @@ let simsage = {
                     'contextMatchBoost': this.context_match_boost,
                     'sourceId': sourceId,
                 };
-                this.post_message('/api/ops/query', clientQuery, function(data) {
+                this.post_message('/api/semantic/query', clientQuery, function(data) {
                     self.receive_search_results(data);
                 });
 
@@ -1605,7 +1605,7 @@ let simsage = {
                 this.shard_size_list = data.shardSizeList;
                 set_syn_sets(data.contextStack);
                 data.resultList.map(function (sr) {
-                    if (!sr.botResult) {
+                    if (!sr.qnaResult) {
                         // enhance search result for display
                         if (sr.textIndex >= 0 && sr.textIndex < sr.textList.length) {
                             sr['index'] = sr.textIndex;  // inner offset index
@@ -1688,19 +1688,18 @@ let simsage = {
                 this.show_search_results();
             }
 
-            // update source categories?
-            if (data.sourceCategories && data.sourceCategories.categoryList && data.sourceCategories.categoryList.length > 0) {
+            if (data.categoryList && data.categoryList.length > 0) {
                 // first - hide the ones that aren't included at all
                 let existingMap = {};
-                let scl = data.sourceCategories.categoryList;
+                let scl = data.categoryList;
                 for (let i in scl) {
                     existingMap[scl[i].metadata] = true;
                 }
-                if (this.source != null && this.source.category_list) {
-                    for (let i in this.source.category_list) {
-                        let cat = this.source.category_list[i];
+                if (this.kb != null && this.kb.categoryList) {
+                    for (let i in this.kb.categoryList) {
+                        let cat = this.kb.categoryList[i];
                         if (!existingMap[cat.metadata] && (cat.categoryType === cat_type_plain || cat.categoryType === cat_type_two_level)) {
-                            this.remove_source_category(this.source.category_list[i]);
+                            this.remove_source_category(this.kb.categoryList[i]);
                         }
                     }
                 }
@@ -1709,17 +1708,17 @@ let simsage = {
                     if (scl.hasOwnProperty(i)) {
                         let cat = scl[i];
                         if (cat.categoryType === cat_type_plain || cat.categoryType === cat_type_two_level) {
-                            this.update_source_category(cat);
+                            this.update_category(cat);
                         }
                     }
                 }
-            } else if (data.sourceCategories) {
+            } else if (data.categoryList) {
                 // hide all categories - none matched
-                if (this.source != null && this.source.category_list) {
-                    for (let i in this.source.category_list) {
-                        let cat = this.source.category_list[i];
+                if (this.kb != null && this.kb.categoryList) {
+                    for (let i in this.kb.categoryList) {
+                        let cat = this.kb.categoryList[i];
                         if (cat.categoryType === cat_type_plain || cat.categoryType === cat_type_two_level) {
-                            this.remove_source_category(this.source.category_list[i]);
+                            this.remove_source_category(this.kb.categoryList[i]);
                         }
                     }
                 }
@@ -1758,11 +1757,16 @@ let simsage = {
                 let kb = this.kb_list[i];
                 if (kb.id == kb_id) {
                     this.kb = kb;
+                    if (kb.categoryList && kb.categoryList.length) {
+                        this.category_list = kb.categoryList;
+                    } else {
+                        this.category_list = [];
+                    }
                     for (let j in kb.sourceList) {
                         if (kb.sourceList.hasOwnProperty(j)) {
                             let source = kb.sourceList[j];
                             this.source_list.push({"name": source.name, "id": source.sourceId,
-                                "custom_render": source.customRender, "category_list": source.categoryList});
+                                "custom_render": source.customRender, "category_list": []});
                         }
                     }
                     // select a default source if there is only one
@@ -1772,6 +1776,22 @@ let simsage = {
                 }
             }
         }
+
+        // force display of filters if db system
+        if (this.category_list && this.category_list.length > 0) {
+            this.filters_visible = true;
+            this.has_categories = true;
+            this.page_size = this.page_size_custom;
+            // copy the original state of the controls for resets
+            original_category_list = JSON.parse(JSON.stringify(this.category_list));
+            setup_controls(this.category_list);  // our special controller
+            this.show_pagination(); // needed for sorting etc.
+        } else {
+            // clear categories?
+            original_category_list = [];
+            setup_controls([]);
+        }
+
         // setup the drop down boxes in the UI
         this.setup_dropdowns();
         if (this.kb_list.length > 1)
@@ -1781,11 +1801,6 @@ let simsage = {
         // show search screen if there are categories
         if (this.has_categories)
             jQuery(".search-results").show();
-        // clear categories?
-        if (this.source == null || !this.source.category_list || this.source.category_list.length === 0) {
-            original_source_category_list = [];
-            setup_controls([]);
-        }
         // setup the source/kb
         this.clear_search();
     },
@@ -1798,10 +1813,10 @@ let simsage = {
     },
 
     // go through the current source's categories and find the category - and update it as well as its display
-    update_source_category: function(category) {
-        if (this.source != null && this.source.category_list) {
-            for (let i in this.source.category_list) {
-                let sc = this.source.category_list[i];
+    update_category: function(category) {
+        if (this.kb != null && this.kb.categoryList) {
+            for (let i in this.kb.categoryList) {
+                let sc = this.kb.categoryList[i];
                 if (sc.metadata === category.metadata) {
                     sc.items = category.items; // update the list of items to display with their counts
                     update_control(sc);
@@ -1833,15 +1848,6 @@ let simsage = {
                 if (source.id == source_id) {
                     this.source = source;
                     this.is_custom_render = source.custom_render;
-                    // force display of filters if db system
-                    if (source.category_list && source.category_list.length > 0) {
-                        this.filters_visible = true;
-                        this.has_categories = true;
-                        this.page_size = this.page_size_custom;
-                        original_source_category_list = JSON.parse(JSON.stringify(source.category_list));
-                        setup_controls(source.category_list);  // our special controller
-                        this.show_pagination(); // needed for sorting etc.
-                    }
                 } // if is correct source
             }
         }
@@ -2194,6 +2200,9 @@ let search_details = {
             if (result.author) {
                 str += this.render_single_detail("author", result.author);
             }
+            if (result.fileType) {
+                str += this.render_single_detail("file type", result.fileType);
+            }
             if (result.documentType) {
                 str += this.render_single_detail("document type", result.documentType);
             }
@@ -2404,7 +2413,7 @@ let search_bot = {
     show_bot: function(text, link_list, image_list) {
         jQuery(".bot-reply-text").html(this.esc_html(text));
         let time = this.unix_time_convert(new Date().getTime());
-        jQuery(".bot-label-text").html("Bot, " + time);
+        jQuery(".bot-label-text").html("Q&A, " + time);
         jQuery(".bot-box-view").show();
         // add the links
         let str = "";
