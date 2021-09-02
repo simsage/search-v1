@@ -29,6 +29,9 @@ let controls_visible = true;
 // size of one-level and two-level categories (max items)
 let default_category_size = 5;
 
+// minimum date range for display - 24 hours
+let min_date_difference = 3600 * 24;
+
 // execute "clear" on all the controls if they support it
 function clear_controls() {
     clear_controls_no_search();
@@ -146,8 +149,16 @@ function setup_controls(control_data_list) {
                 simsage_control_list.push(star_rating_control.instantiate(c));
             if (c.categoryType === num_type_if_true)
                 simsage_control_list.push(yes_no_control.instantiate(c));
-            if (c.categoryType === num_type_range || c.categoryType === num_type_money || c.categoryType === num_type_date)
-                simsage_control_list.push(slider_control.instantiate(c));
+            if ((c.categoryType === num_type_range || c.categoryType === num_type_money || c.categoryType === num_type_date) && c.minValue && c.maxValue) {
+                if (c.categoryType === num_type_date) {
+                    let delta_delta = c.maxValue - c.minValue;
+                    if (delta_delta > min_date_difference) {
+                        simsage_control_list.push(slider_control.instantiate(c));
+                    }
+                } else {
+                    simsage_control_list.push(slider_control.instantiate(c));
+                }
+            }
         }
     }
     // normal search?
@@ -1814,7 +1825,7 @@ let simsage = {
 
     // go through the current source's categories and find the category - and update it as well as its display
     update_category: function(category) {
-        if (this.kb != null && this.kb.categoryList) {
+        if (category && category.metadata && category.items && this.kb && this.kb.categoryList) {
             for (let i in this.kb.categoryList) {
                 let sc = this.kb.categoryList[i];
                 if (sc.metadata === category.metadata) {
