@@ -2876,7 +2876,7 @@ let chat_control = {
             if (this.connection_retry_count > 1) {
                 this.error('not connected, trying to re-connect, please wait (try ' + this.connection_retry_count + ')');
             }
-            setTimeout(function() { this.connect_ws() }, 5000); // try and re-connect as a one-off in 5 seconds
+            setTimeout(function() { simsage.connect_ws() }, 5000); // try and re-connect as a one-off in 5 seconds
             this.connection_retry_count += 1;
 
         } else {
