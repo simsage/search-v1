@@ -9,6 +9,7 @@ let num_type_money = "monetary x 100 range";
 let num_type_range = "number range";
 let num_type_date = "date range";
 let num_type_if_true = "select if true";
+let ctr_similar = "group-similar";
 
 // labels for no / yes in yes_no selectors
 let yes_no_no = "no";
@@ -57,6 +58,15 @@ function pad2(item) {
     return ("" + item).padStart(2, '0');
 }
 
+function clean_metadata_name(str) {
+    if (str) {
+        return str
+            .replace(/{/g, "-")
+            .replace(/}/g, "-")
+    }
+    return "";
+}
+
 // unix-date-time / 1000 to year/month/day string
 function to_date_str(value) {
     if (value && typeof value === 'number') {
@@ -74,7 +84,7 @@ function get_metadata() {
     let data = {};
     for (let i in simsage_control_list) {
         let c = simsage_control_list[i];
-        if (c.get_metadata) c.get_metadata(data);
+        if (c.metadata !== ctr_similar && c.get_metadata) c.get_metadata(data);
     }
     for (let i in simsage_sort_list) {
         let item = simsage_sort_list[i];
@@ -85,6 +95,17 @@ function get_metadata() {
         }
     }
     return data;
+}
+
+// markup strings
+function markup_string_with_syn_sets(text) {
+    for (let i in simsage_control_list) {
+        let c = simsage_control_list[i];
+        if (c.markup_string_with_syn_sets) {
+            return c.markup_string_with_syn_sets(text);
+        }
+    }
+    return text;
 }
 
 // set the syn-sets dynamically
@@ -111,6 +132,7 @@ function setup_controls(control_data_list) {
     // setup render containers - the holders of each control by metadata-name
     let container_str = ""
     if (control_data_list && control_data_list.length > 0) {
+
         container_str += "<div class='no-select'>";
         container_str += "<span class=\"category-items-dropdown-header\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"toggle_filters()\" title='show or hide the filters'>" + (controls_visible ? triangle_open : triangle_close) + " Filters</span>";
         container_str += "<span class=\"category-clear-filters\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"clear_controls()\" title=\"reset all items below to their default values\">&#x1f5d8; Clear filters</span>";
@@ -209,6 +231,8 @@ function update_control(source_control) {
     // find the control
     for (let i in simsage_control_list) {
         let c = simsage_control_list[i];
+        if (c.setup_selection)
+            c.setup_selection();
         if (c && c.metadata && c.metadata === source_control.metadata) {
             if (source_control.items) {
                 // get the selected items
@@ -240,8 +264,21 @@ function update_control(source_control) {
 // hide a control
 function hide_control(cat) {
     if (cat && cat.metadata) {
-        jQuery(".c-" + cat.metadata).hide();
+        jQuery(".c-" + clean_metadata_name(cat.metadata)).hide();
     }
+}
+
+
+// get if we need to group similar documents or not
+function group_similar_documents() {
+    for (let i in simsage_control_list) {
+        let c = simsage_control_list[i];
+        if (c.metadata === ctr_similar) {
+            if (c.value === 1.0)
+                return true;
+        }
+    }
+    return false;
 }
 
 
@@ -535,7 +572,7 @@ let one_level_control = {
     },
 
     set_filter: function() {
-        let item_class = ".t-" + this.metadata;
+        let item_class = ".t-" + clean_metadata_name(this.metadata);
         this.filter = jQuery(item_class).val();
         this.render();
         exec('focus_text', this.metadata, item_class);
@@ -629,7 +666,7 @@ let one_level_control = {
             }
 
         } // end of if plain
-        jQuery(".c-" + this.metadata).html(str);
+        jQuery(".c-" + clean_metadata_name(this.metadata)).html(str);
     }
 }
 
@@ -724,7 +761,7 @@ let two_level_control = {
     },
 
     set_filter: function() {
-        let item_class = ".t-" + this.metadata;
+        let item_class = ".t-" + clean_metadata_name(this.metadata);
         this.filter = jQuery(item_class).val();
         this.render();
         exec('focus_text', this.metadata, item_class);
@@ -852,7 +889,7 @@ let two_level_control = {
                     " tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"exec('toggle_category','" + this.metadata + "');\">...</div>";
             }
         } // end of if two-level
-        jQuery(".c-" + this.metadata).html(str);
+        jQuery(".c-" + clean_metadata_name(this.metadata)).html(str);
     },
 
 }
@@ -924,7 +961,7 @@ let star_rating_control = {
             "<div class=\""+c[0]+"\" tabindex=\"0\" onkeyup=\"if (activation(event)) this.onclick(null)\" onclick=\"exec('select_rating','" + this.metadata + "', 0)\">" + sc + sc + sc + sc + sc + "</div>\n" +
             "</div>\n" +
             "</div>\n";
-        jQuery(".c-" + this.metadata).html(str);
+        jQuery(".c-" + clean_metadata_name(this.metadata)).html(str);
     }
 }
 
@@ -972,7 +1009,7 @@ let yes_no_control = {
             this.value = 0.0;
         }
         this.render();
-        if (simsage && simsage.do_search) simsage.do_search();
+        if (this.metadata !== ctr_similar && simsage && simsage.do_search) simsage.do_search();
     },
 
     // render a yes no slider
@@ -993,7 +1030,7 @@ let yes_no_control = {
             "<label class=\"toggle-label\">" + yes_no_str + "</label>\n" +
             "</div>\n" +
             "</div>\n";
-        jQuery(".c-" + this.metadata).html(str);
+        jQuery(".c-" + clean_metadata_name(this.metadata)).html(str);
     },
 
 
@@ -1107,7 +1144,7 @@ let slider_control = {
             "</div>\n" +
             "</div>\n" +
             "</div>\n";
-        jQuery(".c-" + this.metadata).html(str);
+        jQuery(".c-" + clean_metadata_name(this.metadata)).html(str);
         this.display_values();
     }
 }
@@ -1118,20 +1155,20 @@ let slider_control = {
 //
 let syn_set_control = {
 
-    items: [], // the list of synset display items
+    synset_items: [], // the list of synset display items
     metadata: "syn-set-control",
 
     instantiate: function() {
         let copy = jQuery.extend({}, syn_set_control);
         jQuery.extend(copy, common_functions);
-        copy.items = [];
+        copy.synset_items = [];
         return copy;
     },
 
     // reset this control
     clear: function() {
-        for (let j in this.items) {
-            this.items[j].selected = -1;
+        for (let j in this.synset_items) {
+            this.synset_items[j].selected = -1;
         }
         this.render();
     },
@@ -1139,18 +1176,35 @@ let syn_set_control = {
     // give the controls their value
     set_syn_sets: function(syn_sets) {
         if (syn_sets && syn_sets.length > 0) {
-            this.items = syn_sets;
+            // keep any existing selections by copying them to the new data
+            if (this.synset_items && this.synset_items.length > 0) {
+                for (let j in this.synset_items) {
+                    const existing_item = this.synset_items[j];
+                    if (existing_item.selected >= 0) {
+                        for (let i in syn_sets) {
+                            const new_item = syn_sets[i];
+                            if (new_item.word === existing_item.word) {
+                                new_item.selected = existing_item.selected;
+                                syn_sets[i] = new_item;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
+        this.synset_items = syn_sets;
         this.render();
     },
 
     // return a lookup word -> selected (if selected)
     get_selected_syn_sets: function() {
         let syn_set_dictionary = {};
-        for (let key in this.items) {
-            let item = this.items[key];
-            if (item.word && item.selected >= 0) {
-                syn_set_dictionary[item.word.toLowerCase()] = item.selected;
+        for (let i in this.synset_items) {
+            let word = this.synset_items[i]["word"];
+            let selected = this.synset_items[i]["selected"];
+            if (word && selected >= 0) {
+                syn_set_dictionary[word.toLowerCase()] = selected;
             }
         }
         return syn_set_dictionary;
@@ -1203,8 +1257,8 @@ let syn_set_control = {
         if (word && word.length > 0) {
             let selected = parseInt(jQuery(".synset-selector-" + word).val());
             if (selected >= 0 || selected === -1) {
-                for (let key in this.items) {
-                    let item = this.items[key];
+                for (let key in this.synset_items) {
+                    let item = this.synset_items[key];
                     if (item.word === word) {
                         item.selected = selected;
                     }
@@ -1213,24 +1267,41 @@ let syn_set_control = {
         }
     },
 
+    setup_selection: function() {
+        if (this.synset_items && this.synset_items.length > 0) {
+            for (let i in this.synset_items) {
+                const word = this.synset_items[i]["word"];
+                const selected = this.synset_items[i]["selected"];
+                if (selected >= 0 || selected === -1) {
+                    $(".synset-selector-" + word).val(selected);
+                }
+            }
+        }
+    },
+
     // render a single item
     render_single_synset: function(synset) {
         let str = "";
-        if (synset && synset["word"] && synset["clouds"]) {
+        if (synset && synset["word"] && synset["wordCloudCsvList"]) {
             let word = synset["word"];
-            let clouds = synset["clouds"]; // this is a csv list of words
-            let selected = synset["selected"] ? synset["selected"] : -1;
+            let clouds = synset["wordCloudCsvList"]; // this is a csv list of words
+            let selected = (synset["selected"] >= 0) ? synset["selected"] : -1;
             if (clouds.length > 1) {
                 str += '<div class="title-box">';
                 str += '<div class="title" title="select different meanings of \'' + word + '\'">synset: ' + word + '</div>';
-                str += "<select class=\"synset-selector-" + word + "\" onchange=\"exec('select_syn_set','" + this.metadata + "','" + word + "');\">";
-                str += '<option value="-1">all meanings</option>';
+                str += "<select class=\"synset-selector-" + word + " synset-width\" onchange=\"exec('select_syn_set','" + this.metadata + "','" + word + "');\">";
+                str += '<option value="-1">any</option>';
                 for (let i in clouds) {
                     if (clouds.hasOwnProperty(i)) {
+                        const word_csv = clouds[i].split(",");
+                        let description = word_csv[0];
+                        if (word_csv.length > 1)
+                            description += "," + word_csv[1];
+
                         if (selected === i) {
-                            str += '<option value="' + i + '" selected>' + clouds[i] + '</option>';
+                            str += '<option value="' + i + '" selected>' + description + '</option>';
                         } else {
-                            str += '<option value="' + i + '">' + clouds[i] + '</option>';
+                            str += '<option value="' + i + '">' + description + '</option>';
                         }
                     }
                 }
@@ -1244,9 +1315,10 @@ let syn_set_control = {
     // render a series of syn-set items
     render: function() {
         let str = "";
-        if (this.items && this.items.length > 0) {
-            for (let key in this.items) {
-                str += this.render_single_synset(this.items[key]);
+        if (this.synset_items && this.synset_items.length > 0) {
+            for (let i in this.synset_items) {
+                const syn_set = this.synset_items[i];
+                str += this.render_single_synset(syn_set);
             }
         }
         jQuery(".syn-sets").html(str);
@@ -1272,7 +1344,7 @@ function super_search_query_str(text, search_options_data, has_categories) {
     let query = "(";
     let needsAnd = false;
     if (text.length > 0) {
-        query += "body: " + syn_set_control.markup_string_with_syn_sets(text);
+        query += "body: " + markup_string_with_syn_sets(text);
         needsAnd = true;
     }
     let af = search_options_data;
@@ -1564,6 +1636,7 @@ let simsage = {
                     'spellingSuggest': this.use_spelling_suggest,
                     'contextLabel': this.context_label,
                     'contextMatchBoost': this.context_match_boost,
+                    'groupSimilarDocuments': group_similar_documents(),
                     'sourceId': sourceId,
                 };
                 this.post_message('/api/semantic/query', clientQuery, function(data) {
@@ -1599,7 +1672,7 @@ let simsage = {
             this.semantic_search_results = [];
             this.semantic_search_result_map = {};
             this.semantic_search_result_map_id = {};
-            this.spelling_suggestion = data.spellingCorrection; // set spelling suggestion if we have one
+            // this.spelling_suggestion = data.spellingCorrection; // set spelling suggestion if we have one
 
             // set the assigned operator
             if (data.assignedOperatorId && data.assignedOperatorId.length > 0) {
@@ -1614,7 +1687,7 @@ let simsage = {
             // did we get semantic search results?
             if (data.resultList) {
                 this.shard_size_list = data.shardSizeList;
-                set_syn_sets(data.contextStack);
+                set_syn_sets(data.synSetList);
                 data.resultList.map(function (sr) {
                     if (!sr.qnaResult) {
                         // enhance search result for display
@@ -1768,10 +1841,11 @@ let simsage = {
                 let kb = this.kb_list[i];
                 if (kb.id == kb_id) {
                     this.kb = kb;
+                    this.category_list = [{categoryType: num_type_if_true, displayName: "group similar documents", metadata: ctr_similar, value: 1.0}];
                     if (kb.categoryList && kb.categoryList.length) {
-                        this.category_list = kb.categoryList;
-                    } else {
-                        this.category_list = [];
+                        for (const i in kb.categoryList) {
+                            this.category_list.push(kb.categoryList[i]);
+                        }
                     }
                     for (let j in kb.sourceList) {
                         if (kb.sourceList.hasOwnProperty(j)) {
@@ -1779,10 +1853,6 @@ let simsage = {
                             this.source_list.push({"name": source.name, "id": source.sourceId,
                                 "custom_render": source.customRender, "category_list": []});
                         }
-                    }
-                    // select a default source if there is only one
-                    if (this.source_list.length === 1) {
-                        this.on_change_source(this.source_list[0].id);
                     }
                 }
             }
@@ -2191,8 +2261,7 @@ let search_details = {
     },
 
     get_binary_url: function(url_id) {
-        return this.base_url + '/api/document/binary/' + this.organisationId + '/' + this.kb.id + '/' +
-               this.get_client_id() + '/' + url_id;
+        return this.base_url + '/api/document/binary/' + this.organisationId + '/' + this.kb.id + '/' + url_id;
     },
 
     // render the details of a single result
@@ -3058,7 +3127,7 @@ let search_results_control = {
         return (url_lwr.indexOf('http://') === 0 || url_lwr.indexOf('https://') === 0);
     },
 
-    render_single_text_search_result: function(id, url, title, fragment, fragment_index, num_fragments) {
+    render_single_text_search_result: function(id, url, title, fragment, fragment_index, num_fragments, similar_document_list) {
         let str = "<div class=\"search-result\">\n" +
             "<div class=\"search-text-width\">\n";
 
@@ -3078,8 +3147,20 @@ let search_results_control = {
                 "<div title=\"view [url]\" onclick=\"simsage.open_url('[binary]')\" class=\"more-details\"><span class=\"title-text\">[title]</span></div>\n";
         }
 
-        str += "<div><span class=\"result-text\">[fragment]</span></div>\n" +
-            "<div class=\"navigate-td\">\n";
+        str += "<div><span class=\"result-text\">[fragment]</span></div>\n";
+
+        // do we have similar documents?
+        if (similar_document_list && similar_document_list.length > 0) {
+            str += "<div class='similar-document-list'>\n";
+            str += "<div class='similar-document-title'>similar documents</div>";
+            for (const i in similar_document_list) {
+                const item = similar_document_list[i]; // url, urlId, similarity
+                str += "<div class=\"similar-document-link\" title='open " + this.esc_html(item.url) + "'><a href='" + this.get_binary_url(item.urlId) + "'>" + this.esc_html(item.url) + "</a></div>"
+            }
+            str += "</div>\n";
+        }
+
+        str += "<div class=\"navigate-td\">\n";
         if (fragment_index > 0) {
             str += "<span class=\"navigate-left\" tabindex=\"0\" title=\"view the previous relevant fragment in this document\" onkeyup=\"if (activation(event)) this.onclick()\" onclick=\"simsage.prev_fragment([id]);\"><span class=\"navigate-image\">&#x2039;</span></span>\n";
         } else {
@@ -3231,7 +3312,8 @@ let search_results_control = {
                     let result = this.semantic_search_results[i];
                     if (result.url) {
                         str += this.render_single_text_search_result(result.urlId, result.url, result.title,
-                            result.textList[result.textIndex], result.textIndex, result.textList.length);
+                            result.textList[result.textIndex], result.textIndex, result.textList.length,
+                            result.similarDocumentList);
                     }
                 }
             }
