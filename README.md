@@ -1,12 +1,6 @@
 
 # using SimSage search
 
-## uglify (minify) js
-
-installation: `npm install minify -g`
-
-usage: `minify js/simsage-search.js > js/simsage-search.min.js`
-
 ## include SimSage styles and javascript in your own html
 
 You can download all the files referenced below from this repository.
